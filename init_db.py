@@ -217,10 +217,40 @@ CREATE TABLE memorization (
     end_verse INTEGER NOT NULL,
     pages INTEGER,
     rating TEXT NOT NULL,
+    reciter TEXT,
     notes TEXT,
     FOREIGN KEY (surah_id) REFERENCES surahs(id)
 )
 ''')
+
+# Create reciters table
+cursor.execute('''
+DROP TABLE IF EXISTS reciters
+''')
+
+cursor.execute('''
+CREATE TABLE reciters (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    info TEXT
+)
+''')
+
+# Insert some popular reciters
+reciters = [
+    ("الشيخ عبد الباسط عبد الصمد", "قارئ مصري مشهور بصوته الجميل وتلاوته الخاشعة"),
+    ("الشيخ محمود خليل الحصري", "أحد أشهر قراء القرآن في العالم الإسلامي"),
+    ("الشيخ محمد صديق المنشاوي", "قارئ مصري مشهور بالتجويد والأداء المميز"),
+    ("الشيخ مشاري راشد العفاسي", "قارئ كويتي معروف بتلاوته العذبة"),
+    ("الشيخ ماهر المعيقلي", "إمام الحرم المكي وقارئ سعودي مشهور"),
+    ("الشيخ عبد الرحمن السديس", "إمام الحرم المكي المعروف"),
+    ("الشيخ سعد الغامدي", "قارئ سعودي مشهور بصوته الرخيم"),
+    ("الشيخ عبدالله بصفر", "قارئ سعودي مشهور"),
+    ("الشيخ محمود علي البنا", "قارئ مصري من كبار القراء المصريين")
+]
+
+for reciter in reciters:
+    cursor.execute('INSERT INTO reciters (name, info) VALUES (?, ?)', reciter)
 
 # Insert data into surahs table
 for surah in surahs:

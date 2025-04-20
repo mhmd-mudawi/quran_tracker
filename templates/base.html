@@ -95,6 +95,18 @@
                             <span>تقدم الحفظ حسب الأجزاء</span>
                         </a>
                     </li>
+                    <li>
+                        <a href="{{ url_for('reciters') }}" class="sidebar-link {% if request.path == url_for('reciters') %}active{% endif %}">
+                            <i class="fas fa-microphone-alt"></i>
+                            <span>القراء المفضلين</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('database_management') }}" class="sidebar-link {% if request.path == url_for('database_management') %}active{% endif %}">
+                            <i class="fas fa-database"></i>
+                            <span>إدارة قاعدة البيانات</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </aside>

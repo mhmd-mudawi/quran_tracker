@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}إحصائيات القارئ{% endblock %}
+
+{% block page_title %}إحصائيات القارئ: {{ reciter.name }}{% endblock %}
+
+{% block content %}
+<div class="flex justify-end mb-4">
+    <a href="{{ url_for('reciters') }}" class="px-5 py-2.5 bg-slate-300 text-slate-800 rounded-lg hover:bg-slate-400 transition-all duration-300">
+        <i class="fas fa-arrow-right mr-1"></i> العودة إلى قائمة القراء
+    </a>
+</div>
+
+<!-- Reciter Info -->
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <div class="flex items-start justify-between mb-4">
+        <div>
+            <h3 class="text-xl font-bold text-primary">{{ reciter.name }}</h3>
+            {% if reciter.info %}
+                <p class="text-slate-600 mt-2">{{ reciter.info }}</p>
+            {% endif %}
+        </div>
+        <a href="{{ url_for('edit_reciter', id=reciter.id) }}" class="text-blue-600 hover:text-blue-800" title="تعديل">
+            <i class="fas fa-edit"></i>
+        </a>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+        <div class="bg-teal-50 rounded-lg p-4 text-center">
+            <h4 class="text-sm text-slate-600 mb-1">عدد سجلات الحفظ</h4>
+            <p class="text-2xl font-bold text-primary">{{ memorizations|length }}</p>
+        </div>
+        <div class="bg-teal-50 rounded-lg p-4 text-center">
+            <h4 class="text-sm text-slate-600 mb-1">مجموع الآيات</h4>
+            <p class="text-2xl font-bold text-primary">{{ total_verses }}</p>
+        </div>
+        <div class="bg-teal-50 rounded-lg p-4 text-center">
+            <h4 class="text-sm text-slate-600 mb-1">مجموع الصفحات</h4>
+            <p class="text-2xl font-bold text-primary">{{ total_pages }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Surah Distribution -->
+{% if surah_distribution %}
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h3 class="text-xl font-bold text-primary mb-4">توزيع السور</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white">
+                <thead class="bg-slate-100">
+                    <tr>
+                        <th class="py-3 px-4 text-right">السورة</th>
+                        <th class="py-3 px-4 text-right">عدد السجلات</th>
+                        <th class="py-3 px-4 text-right">عدد الآيات</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for surah in surah_distribution %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4 font-medium">{{ surah.name }}</td>
+                            <td class="py-3 px-4">{{ surah.count }}</td>
+                            <td class="py-3 px-4">{{ surah.verses }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Memorization Records -->
+<div class="bg-white rounded-lg shadow p-6">
+    <h3 class="text-xl font-bold text-primary mb-4">سجلات الحفظ</h3>
+    
+    {% if memorizations %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white">
+                <thead class="bg-slate-100">
+                    <tr>
+                        <th class="py-3 px-4 text-right">التاريخ</th>
+                        <th class="py-3 px-4 text-right">السورة</th>
+                        <th class="py-3 px-4 text-right">الآيات</th>
+                        <th class="py-3 px-4 text-right">عدد الآيات</th>
+                        <th class="py-3 px-4 text-right">الصفحات</th>
+                        <th class="py-3 px-4 text-right">التقييم</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for memo in memorizations %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4">{{ memo.date }}</td>
+                            <td class="py-3 px-4">{{ memo.surah_name }}</td>
+                            <td class="py-3 px-4">{{ memo.start_verse }} - {{ memo.end_verse }}</td>
+                            <td class="py-3 px-4">{{ memo.verse_count }}</td>
+                            <td class="py-3 px-4">{{ memo.pages or '-' }}</td>
+                            <td class="py-3 px-4">
+                                {% if memo.rating == 'متقن' %}
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">متقن</span>
+                                {% elif memo.rating == 'متوسط' %}
+                                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">متوسط</span>
+                                {% else %}
+                                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">يحتاج مراجعة</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-8 text-slate-500">
+            <p>لا توجد سجلات حفظ لهذا القارئ حتى الآن</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Additional scripts if needed
+</script>
+{% endblock %}

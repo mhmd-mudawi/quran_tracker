@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}القراء المفضلين{% endblock %}
+
+{% block page_title %}القراء المفضلين{% endblock %}
+
+{% block content %}
+<div class="flex justify-end mb-4">
+    <a href="{{ url_for('add_reciter') }}" class="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
+        <i class="fas fa-plus-circle mr-1"></i> إضافة قارئ جديد
+    </a>
+</div>
+
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    {% if reciters %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white">
+                <thead class="bg-slate-100">
+                    <tr>
+                        <th class="py-3 px-4 text-right">#</th>
+                        <th class="py-3 px-4 text-right">اسم القارئ</th>
+                        <th class="py-3 px-4 text-right">معلومات</th>
+                        <th class="py-3 px-4 text-right">عدد الحفظ</th>
+                        <th class="py-3 px-4 text-right">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for reciter in reciters %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4">{{ loop.index }}</td>
+                            <td class="py-3 px-4 font-bold">{{ reciter.name }}</td>
+                            <td class="py-3 px-4 max-w-sm truncate" title="{{ reciter.info }}">{{ reciter.info or '-' }}</td>
+                            <td class="py-3 px-4">
+                                {% if reciter.count > 0 %}
+                                    <a href="{{ url_for('reciter_stats', id=reciter.id) }}" class="text-primary hover:underline">
+                                        {{ reciter.count }} سجل
+                                    </a>
+                                {% else %}
+                                    <span class="text-slate-400">0 سجل</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="flex gap-2">
+                                    <a href="{{ url_for('edit_reciter', id=reciter.id) }}" class="text-blue-600 hover:text-blue-800" title="تعديل">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if reciter.count == 0 %}
+                                        <a href="#" onclick="confirmDelete({{ reciter.id }}, '{{ reciter.name }}'); return false;" 
+                                            class="text-red-600 hover:text-red-800" title="حذف">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+                                    {% else %}
+                                        <span class="text-slate-300 cursor-not-allowed" title="لا يمكن حذف قارئ مستخدم في سجلات الحفظ">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-16 text-slate-500">
+            <i class="fas fa-microphone-alt text-5xl mb-4 text-slate-300"></i>
+            <h3 class="text-xl font-bold mb-2">لا يوجد قراء مسجلين</h3>
+            <p class="mb-4">لم يتم تسجيل أي قارئ حتى الآن</p>
+            <a href="{{ url_for('add_reciter') }}" class="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
+                <i class="fas fa-plus-circle mr-1"></i> إضافة قارئ جديد
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-xl font-bold text-primary mb-4">تأكيد الحذف</h3>
+        <p class="mb-6">هل أنت متأكد من حذف القارئ <span id="deleteItemName" class="font-bold"></span>؟</p>
+        <div class="flex justify-end gap-3">
+            <button id="cancelDelete" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 transition-all duration-300">
+                إلغاء
+            </button>
+            <a id="confirmDeleteBtn" href="#" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-300">
+                نعم، حذف
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function confirmDelete(id, name) {
+        // Set the item name in the modal
+        document.getElementById('deleteItemName').textContent = name;
+        
+        // Set the delete URL
+        document.getElementById('confirmDeleteBtn').href = "{{ url_for('delete_reciter', id=0) }}".replace('0', id);
+        
+        // Show the modal
+        document.getElementById('deleteModal').classList.remove('hidden');
+    }
+
+    // Cancel delete action
+    document.getElementById('cancelDelete').addEventListener('click', function() {
+        document.getElementById('deleteModal').classList.add('hidden');
+    });
+</script>
+{% endblock %}

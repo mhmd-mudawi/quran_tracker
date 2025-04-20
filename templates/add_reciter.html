@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة قارئ جديد{% endblock %}
+
+{% block page_title %}إضافة قارئ جديد{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+    <form method="post" action="{{ url_for('add_reciter') }}">
+        <!-- Reciter Name -->
+        <div class="mb-4">
+            <label for="name" class="block mb-2 text-sm font-medium text-slate-700">اسم القارئ <span class="text-red-500">*</span></label>
+            <input type="text" id="name" name="name" required 
+                class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+        </div>
+        
+        <!-- Info -->
+        <div class="mb-6">
+            <label for="info" class="block mb-2 text-sm font-medium text-slate-700">معلومات إضافية</label>
+            <textarea id="info" name="info" rows="3"
+                class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+        </div>
+        
+        <!-- Submit Buttons -->
+        <div class="flex justify-between">
+            <a href="{{ url_for('reciters') }}" class="px-5 py-2.5 bg-slate-300 text-slate-800 rounded-lg hover:bg-slate-400 transition-all duration-300">
+                <i class="fas fa-arrow-right mr-1"></i> رجوع
+            </a>
+            <button type="submit" class="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
+                <i class="fas fa-save mr-1"></i> حفظ
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

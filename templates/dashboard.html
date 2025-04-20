@@ -1,4 +1,12 @@
-{% extends "base.html" %}
+<thead class="bg-slate-100">
+    <tr>
+        <th class="py-3 px-4 text-right">التاريخ</th>
+        <th class="py-3 px-4 text-right">السورة</th>
+        <th class="py-3 px-4 text-right">الآيات</th>
+        <th class="py-3 px-4 text-right">التقييم</th>
+        <th class="py-3 px-4 text-right">القارئ</th>
+    </tr>
+</thead>{% extends "base.html" %}
 
 {% block title %}لوحة التحكم{% endblock %}
 
@@ -6,168 +14,200 @@
 
 {% block content %}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <!-- Total Surahs Memorized -->
-    <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center justify-center text-center">
-        <div class="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center text-primary mb-3">
-            <i class="fas fa-book text-2xl"></i>
-        </div>
-        <h3 class="text-slate-600 text-lg mb-1">السور المحفوظة</h3>
-        <p class="text-3xl font-bold text-primary">{{ stats.unique_surahs }}</p>
-        <p class="text-slate-400 text-sm">من أصل 114 سورة</p>
-    </div>
-    
-    <!-- Total Verses Memorized -->
-    <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center justify-center text-center">
-        <div class="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center text-primary mb-3">
-            <i class="fas fa-align-right text-2xl"></i>
-        </div>
-        <h3 class="text-slate-600 text-lg mb-1">الآيات المحفوظة</h3>
-        <p class="text-3xl font-bold text-primary">{{ stats.total_verses }}</p>
-        <p class="text-slate-400 text-sm">نسبة الحفظ: {{ stats.verse_percentage }}%</p>
-    </div>
-    
-    <!-- Total Pages Memorized -->
-    <div class="bg-white rounded-lg shadow p-6 flex flex-col items-center justify-center text-center">
-        <div class="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center text-primary mb-3">
-            <i class="fas fa-file-alt text-2xl"></i>
-        </div>
-        <h3 class="text-slate-600 text-lg mb-1">الصفحات المحفوظة</h3>
-        <p class="text-3xl font-bold text-primary">{{ stats.total_pages }}</p>
-        <p class="text-slate-400 text-sm">نسبة الحفظ: {{ stats.page_percentage }}%</p>
-    </div>
-    
-    <!-- Progress Bar -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-slate-600 text-lg mb-3 text-center">نسبة الحفظ الكلية</h3>
-        <div class="relative pt-1">
-            <div class="overflow-hidden h-6 mb-2 text-xs flex rounded-lg bg-teal-100">
-                <div style="width:{{ stats.verse_percentage }}%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-500">
-                    <span class="font-bold">{{ stats.verse_percentage }}%</span>
-                </div>
-            </div>
-            <div class="text-center">
-                <p class="text-slate-400 text-sm">{{ stats.total_verses }} آية من أصل 6236 آية</p>
-            </div>
-        </div>
-    </div>
+<!-- Total Surahs Memorized -->
+<div class="bg-white rounded-lg shadow p-6 flex flex-col items-center justify-center text-center">
+<div class="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center text-primary mb-3">
+<i class="fas fa-book text-2xl"></i>
+</div>
+<h3 class="text-slate-600 text-lg mb-1">السور المحفوظة</h3>
+<p class="text-3xl font-bold text-primary">{{ stats.unique_surahs }}</p>
+<p class="text-slate-400 text-sm">من أصل 114 سورة</p>
+</div>
+
+<!-- Total Verses Memorized -->
+<div class="bg-white rounded-lg shadow p-6 flex flex-col items-center justify-center text-center">
+<div class="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center text-primary mb-3">
+<i class="fas fa-align-right text-2xl"></i>
+</div>
+<h3 class="text-slate-600 text-lg mb-1">الآيات المحفوظة</h3>
+<p class="text-3xl font-bold text-primary">{{ stats.total_verses }}</p>
+<p class="text-slate-400 text-sm">نسبة الحفظ: {{ stats.verse_percentage }}%</p>
+</div>
+
+<!-- Total Pages Memorized -->
+<div class="bg-white rounded-lg shadow p-6 flex flex-col items-center justify-center text-center">
+<div class="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center text-primary mb-3">
+<i class="fas fa-file-alt text-2xl"></i>
+</div>
+<h3 class="text-slate-600 text-lg mb-1">الصفحات المحفوظة</h3>
+<p class="text-3xl font-bold text-primary">{{ stats.total_pages }}</p>
+<p class="text-slate-400 text-sm">نسبة الحفظ: {{ stats.page_percentage }}%</p>
+</div>
+
+<!-- Progress Bar -->
+<div class="bg-white rounded-lg shadow p-6">
+<h3 class="text-slate-600 text-lg mb-3 text-center">نسبة الحفظ الكلية</h3>
+<div class="relative pt-1">
+<div class="overflow-hidden h-6 mb-2 text-xs flex rounded-lg bg-teal-100">
+<div style="width:{{ stats.verse_percentage }}%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-500">
+    <span class="font-bold">{{ stats.verse_percentage }}%</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-slate-400 text-sm">{{ stats.total_verses }} آية من أصل 6236 آية</p>
+</div>
+</div>
+</div>
 </div>
 
 <!-- Juz Progress Chart -->
 <div class="bg-white rounded-lg shadow p-6 mb-8">
-    <h3 class="text-xl font-bold text-primary mb-4">تقدم الحفظ عبر الأجزاء</h3>
-    <div class="w-full" style="height: 300px;">
-        <canvas id="juzProgressChart"></canvas>
+<h3 class="text-xl font-bold text-primary mb-4">تقدم الحفظ عبر الأجزاء</h3>
+<div class="w-full" style="height: 300px;">
+<canvas id="juzProgressChart"></canvas>
+</div>
+</div>
+
+<!-- Top Reciters Chart -->
+<div class="bg-white rounded-lg shadow p-6 mb-8">
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-xl font-bold text-primary">القراء المفضلين</h3>
+<a href="{{ url_for('reciters') }}" class="text-primary hover:text-dark hover:underline text-sm">
+عرض الكل <i class="fas fa-arrow-left mr-1"></i>
+</a>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+{% for memo in stats.recent_memorizations %}
+{% if memo.reciter and loop.index <= 3 %}
+<div class="bg-teal-50 rounded-lg p-4 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center">
+        <i class="fas fa-microphone-alt"></i>
     </div>
+    <div>
+        <h4 class="font-bold text-primary">{{ memo.reciter }}</h4>
+        <p class="text-xs text-slate-600">تم الاستماع إليه مؤخراً</p>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+</div>
 </div>
 
 <!-- Recent Memorizations -->
 <div class="bg-white rounded-lg shadow p-6">
-    <h3 class="text-xl font-bold text-primary mb-4">أحدث المحفوظات</h3>
-    
-    {% if stats.recent_memorizations %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full bg-white">
-                <thead class="bg-slate-100">
-                    <tr>
-                        <th class="py-3 px-4 text-right">التاريخ</th>
-                        <th class="py-3 px-4 text-right">السورة</th>
-                        <th class="py-3 px-4 text-right">الآيات</th>
-                        <th class="py-3 px-4 text-right">التقييم</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for memo in stats.recent_memorizations %}
-                        <tr class="hover:bg-slate-50">
-                            <td class="py-3 px-4">{{ memo.date }}</td>
-                            <td class="py-3 px-4">{{ memo.surah_name }}</td>
-                            <td class="py-3 px-4">{{ memo.start_verse }} - {{ memo.end_verse }}</td>
-                            <td class="py-3 px-4">
-                                {% if memo.rating == 'متقن' %}
-                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">متقن</span>
-                                {% elif memo.rating == 'متوسط' %}
-                                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">متوسط</span>
-                                {% else %}
-                                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">يحتاج مراجعة</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="mt-4 text-center">
-            <a href="{{ url_for('memorization_log') }}" class="text-primary hover:text-dark hover:underline">
-                عرض السجل الكامل <i class="fas fa-arrow-left mr-1"></i>
-            </a>
-        </div>
-    {% else %}
-        <div class="text-center py-8 text-slate-500">
-            <i class="fas fa-info-circle text-2xl mb-2"></i>
-            <p>لا توجد سجلات حفظ حتى الآن</p>
-            <a href="{{ url_for('add_memorization') }}" class="mt-3 inline-block text-primary hover:text-dark hover:underline">
-                إضافة حفظ جديد <i class="fas fa-plus-circle"></i>
-            </a>
-        </div>
-    {% endif %}
+<h3 class="text-xl font-bold text-primary mb-4">أحدث المحفوظات</h3>
+
+{% if stats.recent_memorizations %}
+<div class="overflow-x-auto">
+<table class="min-w-full bg-white">
+<thead class="bg-slate-100">
+    <tr>
+        <th class="py-3 px-4 text-right">التاريخ</th>
+        <th class="py-3 px-4 text-right">السورة</th>
+        <th class="py-3 px-4 text-right">الآيات</th>
+        <th class="py-3 px-4 text-right">التقييم</th>
+    </tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+    {% for memo in stats.recent_memorizations %}
+        <tr class="hover:bg-slate-50">
+            <td class="py-3 px-4">{{ memo.date }}</td>
+            <td class="py-3 px-4">{{ memo.surah_name }}</td>
+            <td class="py-3 px-4">{{ memo.start_verse }} - {{ memo.end_verse }}</td>
+            <td class="py-3 px-4">
+                {% if memo.rating == 'متقن' %}
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">متقن</span>
+                {% elif memo.rating == 'متوسط' %}
+                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">متوسط</span>
+                {% else %}
+                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">يحتاج مراجعة</span>
+                {% endif %}
+            </td>
+            <td class="py-3 px-4">
+                {% if memo.reciter %}
+                    <span class="text-primary">{{ memo.reciter }}</span>
+                {% else %}
+                    <span class="text-slate-400">-</span>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+</tbody>
+</table>
+</div>
+
+<div class="mt-4 text-center">
+<a href="{{ url_for('memorization_log') }}" class="text-primary hover:text-dark hover:underline">
+عرض السجل الكامل <i class="fas fa-arrow-left mr-1"></i>
+</a>
+</div>
+{% else %}
+<div class="text-center py-8 text-slate-500">
+<i class="fas fa-info-circle text-2xl mb-2"></i>
+<p>لا توجد سجلات حفظ حتى الآن</p>
+<a href="{{ url_for('add_memorization') }}" class="mt-3 inline-block text-primary hover:text-dark hover:underline">
+إضافة حفظ جديد <i class="fas fa-plus-circle"></i>
+</a>
+</div>
+{% endif %}
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Chart data from backend
-    const chartData = {{ chart_data|safe }};
-    
-    // Prepare data for Chart.js
-    const labels = chartData.map(item => `الجزء ${item.juz_number}`);
-    const percentages = chartData.map(item => item.percentage);
-    
-    // Create gradient
-    window.onload = function() {
-        const ctx = document.getElementById('juzProgressChart').getContext('2d');
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(15, 118, 110, 0.8)');
-        gradient.addColorStop(1, 'rgba(15, 118, 110, 0.2)');
-        
-        // Draw chart
-        const chart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'نسبة الحفظ %',
-                    data: percentages,
-                    backgroundColor: gradient,
-                    borderColor: '#0f766e',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        title: {
-                            display: true,
-                            text: 'نسبة الحفظ %'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'أجزاء القرآن'
-                        }
-                    }
-                }
-            }
-        });
+// Chart data from backend
+const chartData = {{ chart_data|safe }};
+
+// Prepare data for Chart.js
+const labels = chartData.map(item => `الجزء ${item.juz_number}`);
+const percentages = chartData.map(item => item.percentage);
+
+// Create gradient
+window.onload = function() {
+const ctx = document.getElementById('juzProgressChart').getContext('2d');
+const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+gradient.addColorStop(0, 'rgba(15, 118, 110, 0.8)');
+gradient.addColorStop(1, 'rgba(15, 118, 110, 0.2)');
+
+// Draw chart
+const chart = new Chart(ctx, {
+type: 'bar',
+data: {
+labels: labels,
+datasets: [{
+    label: 'نسبة الحفظ %',
+    data: percentages,
+    backgroundColor: gradient,
+    borderColor: '#0f766e',
+    borderWidth: 1
+}]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+plugins: {
+    legend: {
+        display: false
     }
+},
+scales: {
+    y: {
+        beginAtZero: true,
+        max: 100,
+        title: {
+            display: true,
+            text: 'نسبة الحفظ %'
+        }
+    },
+    x: {
+        title: {
+            display: true,
+            text: 'أجزاء القرآن'
+        }
+    }
+}
+}
+});
+}
 </script>
 {% endblock %}

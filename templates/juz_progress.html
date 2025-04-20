@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}تقدم الحفظ حسب الأجزاء{% endblock %}
+
+{% block page_title %}تقدم الحفظ حسب الأجزاء{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {% for juz in juz_data %}
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-lg font-bold text-primary">{{ juz.name }}</h3>
+                <span class="text-xs bg-teal-100 text-primary px-2 py-1 rounded-full">الجزء {{ juz.id }}</span>
+            </div>
+            
+            <!-- Verse Progress -->
+            <div class="mb-5">
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-600">تقدم الآيات</span>
+                    <span class="font-medium">{{ juz.verse_percentage }}%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2.5">
+                    <div class="bg-primary h-2.5 rounded-full" style="width: {{ juz.verse_percentage }}%"></div>
+                </div>
+                <div class="text-xs text-slate-500 mt-1 text-center">
+                    {{ juz.memorized_verses }} / {{ juz.total_verses }} آية
+                </div>
+            </div>
+            
+            <!-- Page Progress -->
+            <div class="mb-2">
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-600">تقدم الصفحات</span>
+                    <span class="font-medium">{{ juz.page_percentage }}%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2.5">
+                    <div class="bg-secondary h-2.5 rounded-full" style="width: {{ juz.page_percentage }}%"></div>
+                </div>
+                <div class="text-xs text-slate-500 mt-1 text-center">
+                    {{ juz.memorized_pages }} / {{ juz.total_pages }} صفحة
+                </div>
+            </div>
+            
+            <!-- Status Badge -->
+            <div class="mt-4 text-center">
+                {% if juz.verse_percentage == 100 %}
+                    <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">مكتمل</span>
+                {% elif juz.verse_percentage > 0 %}
+                    <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">جاري الحفظ</span>
+                {% else %}
+                    <span class="bg-slate-100 text-slate-800 px-3 py-1 rounded-full text-sm">لم يبدأ</span>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Summary Chart -->
+<div class="mt-8 bg-white rounded-lg shadow p-6">
+    <h3 class="text-xl font-bold text-primary mb-4">ملخص تقدم الحفظ حسب الأجزاء</h3>
+    <div style="height: 400px;">
+        <canvas id="juzSummaryChart"></canvas>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-bold text-primary mb-4">ملخص الحفظ</h3>
+        <ul class="space-y-2">
+            <li class="flex justify-between">
+                <span class="text-slate-600">أجزاء مكتملة:</span>
+                <span class="font-bold">{{ juz_data|selectattr('verse_percentage', 'eq', 100)|list|length }}</span>
+            </li>
+            <li class="flex justify-between">
+                <span class="text-slate-600">أجزاء جاري حفظها:</span>
+                <span class="font-bold">{{ juz_data|selectattr('verse_percentage', 'gt', 0)|selectattr('verse_percentage', 'ne', 100)|list|length }}</span>
+            </li>
+            <li class="flex justify-between">
+                <span class="text-slate-600">أجزاء متبقية:</span>
+                <span class="font-bold">{{ juz_data|selectattr('verse_percentage', 'eq', 0)|list|length }}</span>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6 md:col-span-2">
+        <h3 class="text-lg font-bold text-primary mb-4">نسبة الإنجاز الكلية</h3>
+        <div class="relative pt-1">
+            <div class="flex mb-2 items-center justify-between">
+                <div>
+                    <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-primary bg-teal-100">
+                        التقدم
+                    </span>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs font-semibold inline-block text-primary">
+                        {{ (juz_data|sum(attribute='memorized_verses') / juz_data|sum(attribute='total_verses') * 100)|round(2) }}%
+                    </span>
+                </div>
+            </div>
+            <div class="overflow-hidden h-6 mb-4 text-xs flex rounded-lg bg-teal-100">
+                <div style="width:{{ (juz_data|sum(attribute='memorized_verses') / juz_data|sum(attribute='total_verses') * 100)|round(2) }}%" 
+                     class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-500">
+                </div>
+            </div>
+            <div class="text-center text-slate-600">
+                <span class="font-bold">{{ juz_data|sum(attribute='memorized_verses') }}</span> آية محفوظة من أصل 
+                <span class="font-bold">{{ juz_data|sum(attribute='total_verses') }}</span> آية
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prepare data for chart
+        const juzLabels = [
+            {% for juz in juz_data %}
+                "الجزء {{ juz.id }}",
+            {% endfor %}
+        ];
+        
+        const juzPercentages = [
+            {% for juz in juz_data %}
+                {{ juz.verse_percentage }},
+            {% endfor %}
+        ];
+        
+        // Create chart
+        const ctx = document.getElementById('juzSummaryChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: juzLabels,
+                datasets: [{
+                    label: 'نسبة الحفظ %',
+                    data: juzPercentages,
+                    backgroundColor: '#0f766e',
+                    borderColor: '#0f766e',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    barThickness: 16
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'نسبة الحفظ %'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

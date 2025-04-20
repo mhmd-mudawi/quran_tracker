@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>معين الحفاظ | {% block title %}{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Tailwind configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0f766e', // teal-700
+                        secondary: '#0369a1', // sky-700
+                        light: '#f0fdfa', // teal-50
+                        dark: '#134e4a', // teal-900
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Font - Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+        
+        .sidebar-link {
+            @apply flex items-center gap-2 p-3 rounded-lg transition-all duration-300;
+        }
+        
+        .sidebar-link.active {
+            @apply bg-primary text-white font-bold;
+        }
+        
+        .sidebar-link:not(.active):hover {
+            @apply bg-teal-100 text-primary;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div class="flex">
+        <!-- Sidebar -->
+        <aside class="w-64 min-h-screen bg-white shadow-md">
+            <div class="p-5 border-b border-slate-200">
+                <h1 class="text-2xl text-primary font-bold text-center">معين الحفاظ</h1>
+                <p class="text-slate-500 text-sm text-center mt-1">لمتابعة حفظ القرآن الكريم</p>
+            </div>
+            
+            <nav class="p-3">
+                <ul class="flex flex-col gap-1">
+                    <li>
+                        <a href="{{ url_for('dashboard') }}" class="sidebar-link {% if request.path == url_for('dashboard') %}active{% endif %}">
+                            <i class="fas fa-home"></i>
+                            <span>لوحة التحكم</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('add_memorization') }}" class="sidebar-link {% if request.path == url_for('add_memorization') %}active{% endif %}">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>إضافة حفظ جديد</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('memorization_log') }}" class="sidebar-link {% if request.path == url_for('memorization_log') %}active{% endif %}">
+                            <i class="fas fa-list"></i>
+                            <span>سجل الحفظ</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('surah_progress') }}" class="sidebar-link {% if request.path == url_for('surah_progress') %}active{% endif %}">
+                            <i class="fas fa-book-open"></i>
+                            <span>تقدم الحفظ حسب السور</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('juz_progress') }}" class="sidebar-link {% if request.path == url_for('juz_progress') %}active{% endif %}">
+                            <i class="fas fa-bookmark"></i>
+                            <span>تقدم الحفظ حسب الأجزاء</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="flex-1 p-6">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-100 text-red-800{% else %}bg-green-100 text-green-800{% endif %} flex justify-between items-center">
+                            <span>{{ message }}</span>
+                            <button class="text-slate-500 hover:text-slate-800" onclick="this.parentElement.remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Page Title -->
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-primary">{% block page_title %}{% endblock %}</h2>
+            </div>
+            
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

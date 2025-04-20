@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}سجل الحفظ{% endblock %}
+
+{% block page_title %}سجل الحفظ الكامل{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    {% if memorizations %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white">
+                <thead class="bg-slate-100">
+                    <tr>
+                        <th class="py-3 px-4 text-right">#</th>
+                        <th class="py-3 px-4 text-right">التاريخ</th>
+                        <th class="py-3 px-4 text-right">السورة</th>
+                        <th class="py-3 px-4 text-right">من آية</th>
+                        <th class="py-3 px-4 text-right">إلى آية</th>
+                        <th class="py-3 px-4 text-right">عدد الآيات</th>
+                        <th class="py-3 px-4 text-right">الصفحات</th>
+                        <th class="py-3 px-4 text-right">التقييم</th>
+                        <th class="py-3 px-4 text-right">الملاحظات</th>
+                        <th class="py-3 px-4 text-right">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for memo in memorizations %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4">{{ loop.index }}</td>
+                            <td class="py-3 px-4">{{ memo.date }}</td>
+                            <td class="py-3 px-4">{{ memo.surah_name }}</td>
+                            <td class="py-3 px-4">{{ memo.start_verse }}</td>
+                            <td class="py-3 px-4">{{ memo.end_verse }}</td>
+                            <td class="py-3 px-4">{{ memo.verse_count }}</td>
+                            <td class="py-3 px-4">{{ memo.pages or '-' }}</td>
+                            <td class="py-3 px-4">
+                                {% if memo.rating == 'متقن' %}
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">متقن</span>
+                                {% elif memo.rating == 'متوسط' %}
+                                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">متوسط</span>
+                                {% else %}
+                                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">يحتاج مراجعة</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-4 max-w-xs truncate" title="{{ memo.notes }}">{{ memo.notes or '-' }}</td>
+                            <td class="py-3 px-4">
+                                <div class="flex gap-2">
+                                    <a href="{{ url_for('edit_memorization', id=memo.id) }}" class="text-blue-600 hover:text-blue-800" title="تعديل">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="#" onclick="confirmDelete({{ memo.id }}, '{{ memo.surah_name }}', {{ memo.start_verse }}, {{ memo.end_verse }}); return false;" 
+                                        class="text-red-600 hover:text-red-800" title="حذف">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-16 text-slate-500">
+            <i class="fas fa-book-open text-5xl mb-4 text-slate-300"></i>
+            <h3 class="text-xl font-bold mb-2">لا توجد سجلات حفظ</h3>
+            <p class="mb-4">لم يتم تسجيل أي حفظ حتى الآن</p>
+            <a href="{{ url_for('add_memorization') }}" class="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
+                <i class="fas fa-plus-circle mr-1"></i> إضافة حفظ جديد
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-xl font-bold text-primary mb-4">تأكيد الحذف</h3>
+        <p class="mb-6">هل أنت متأكد من حذف سجل حفظ <span id="deleteItemName" class="font-bold"></span>؟</p>
+        <div class="flex justify-end gap-3">
+            <button id="cancelDelete" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 transition-all duration-300">
+                إلغاء
+            </button>
+            <a id="confirmDeleteBtn" href="#" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-300">
+                نعم، حذف
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function confirmDelete(id, surahName, startVerse, endVerse) {
+    // Set the item name in the modal
+    document.getElementById('deleteItemName').textContent = `${surahName} (${startVerse}-${endVerse})`;
+    
+    // Set the delete URL
+    document.getElementById('confirmDeleteBtn').href = "{{ url_for('delete_memorization', id=0) }}".replace('0', id);
+    
+    // Show the modal
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+// Cancel delete action
+document.getElementById('cancelDelete').addEventListener('click', function() {
+    document.getElementById('deleteModal').classList.add('hidden');
+});
+</script>
+{% endblock %}

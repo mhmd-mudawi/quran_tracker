@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل الحفظ{% endblock %}
+
+{% block page_title %}تعديل سجل الحفظ{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+    <form method="post" action="{{ url_for('edit_memorization', id=memorization.id) }}">
+        <!-- Date -->
+        <div class="mb-4">
+            <label for="date" class="block mb-2 text-sm font-medium text-slate-700">التاريخ <span class="text-red-500">*</span></label>
+            <input type="date" id="date" name="date" value="{{ memorization.date }}" 
+                class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+        </div>
+        
+        <!-- Surah Selection -->
+        <div class="mb-4">
+            <label for="surah_id" class="block mb-2 text-sm font-medium text-slate-700">السورة <span class="text-red-500">*</span></label>
+            <select id="surah_id" name="surah_id" required
+                class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                <option value="">اختر السورة</option>
+                {% for surah in surahs %}
+                    <option value="{{ surah.id }}" {% if surah.id == memorization.surah_id %}selected{% endif %}>
+                        {{ surah.name }} ({{ surah.verses }} آية)
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Start Verse -->
+            <div>
+                <label for="start_verse" class="block mb-2 text-sm font-medium text-slate-700">من الآية <span class="text-red-500">*</span></label>
+                <input type="number" id="start_verse" name="start_verse" min="1" value="{{ memorization.start_verse }}" required
+                    class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+            </div>
+            
+            <!-- End Verse -->
+            <div>
+                <label for="end_verse" class="block mb-2 text-sm font-medium text-slate-700">إلى الآية <span class="text-red-500">*</span></label>
+                <input type="number" id="end_verse" name="end_verse" min="1" value="{{ memorization.end_verse }}" required
+                    class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+            </div>
+        </div>
+        
+        <!-- Verse Count (Calculated) -->
+        <div class="mb-4">
+            <label for="verse_count" class="block mb-2 text-sm font-medium text-slate-700">عدد الآيات</label>
+            <input type="text" id="verse_count" readonly
+                class="block w-full p-2.5 border border-slate-200 bg-slate-50 rounded-lg" 
+                value="{{ memorization.end_verse - memorization.start_verse + 1 }}">
+        </div>
+        
+        <!-- Pages -->
+        <div class="mb-4">
+            <label for="pages" class="block mb-2 text-sm font-medium text-slate-700">عدد الصفحات</label>
+            <input type="number" id="pages" name="pages" min="0" value="{{ memorization.pages or '' }}"
+                class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+        </div>
+        
+        <!-- Rating -->
+        <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-slate-700">تقييم الحفظ <span class="text-red-500">*</span></label>
+            <div class="flex gap-4">
+                <div class="flex items-center">
+                    <input type="radio" id="rating_excellent" name="rating" value="متقن" 
+                        {% if memorization.rating == 'متقن' %}checked{% endif %} required
+                        class="w-4 h-4 text-primary focus:ring-primary">
+                    <label for="rating_excellent" class="ms-2 text-sm font-medium text-slate-700">متقن</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="radio" id="rating_good" name="rating" value="متوسط" 
+                        {% if memorization.rating == 'متوسط' %}checked{% endif %} required
+                        class="w-4 h-4 text-primary focus:ring-primary">
+                    <label for="rating_good" class="ms-2 text-sm font-medium text-slate-700">متوسط</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="radio" id="rating_needs_review" name="rating" value="يحتاج مراجعة" 
+                        {% if memorization.rating == 'يحتاج مراجعة' %}checked{% endif %} required
+                        class="w-4 h-4 text-primary focus:ring-primary">
+                    <label for="rating_needs_review" class="ms-2 text-sm font-medium text-slate-700">يحتاج مراجعة</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notes -->
+        <div class="mb-6">
+            <label for="notes" class="block mb-2 text-sm font-medium text-slate-700">ملاحظات</label>
+            <textarea id="notes" name="notes" rows="3"
+                class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">{{ memorization.notes or '' }}</textarea>
+        </div>
+        
+        <!-- Submit Buttons -->
+        <div class="flex justify-between">
+            <a href="{{ url_for('memorization_log') }}" class="px-5 py-2.5 bg-slate-300 text-slate-800 rounded-lg hover:bg-slate-400 transition-all duration-300">
+                <i class="fas fa-arrow-right mr-1"></i> رجوع
+            </a>
+            <button type="submit" class="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
+                <i class="fas fa-save mr-1"></i> حفظ التغييرات
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Get DOM elements
+    const surahSelect = document.getElementById('surah_id');
+    const startVerseInput = document.getElementById('start_verse');
+    const endVerseInput = document.getElementById('end_verse');
+    const verseCountInput = document.getElementById('verse_count');
+    
+    // Function to update verse count
+    function updateVerseCount() {
+        const startVerse = parseInt(startVerseInput.value) || 0;
+        const endVerse = parseInt(endVerseInput.value) || 0;
+        
+        if (startVerse > 0 && endVerse > 0 && endVerse >= startVerse) {
+            verseCountInput.value = endVerse - startVerse + 1;
+        } else {
+            verseCountInput.value = 0;
+        }
+    }
+    
+    // Event listeners
+    startVerseInput.addEventListener('input', updateVerseCount);
+    endVerseInput.addEventListener('input', updateVerseCount);
+    
+    // Function to fetch surah data and update max verse values
+    surahSelect.addEventListener('change', async function() {
+        const surahId = this.value;
+        
+        if (!surahId) {
+            startVerseInput.value = '';
+            endVerseInput.value = '';
+            verseCountInput.value = '0';
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/get-surah-verses/${surahId}`);
+            const data = await response.json();
+            
+            if (data.verses) {
+                // Set max values
+                startVerseInput.max = data.verses;
+                endVerseInput.max = data.verses;
+                
+                updateVerseCount();
+            }
+        } catch (error) {
+            console.error('Error fetching surah data:', error);
+        }
+    });
+    
+    // Update verse count on page load
+    updateVerseCount();
+    
+    // Trigger change event to set max values based on current surah
+    surahSelect.dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

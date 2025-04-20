@@ -1,0 +1,302 @@
+[
+  {
+    "id": 1,
+    "name": "الجزء الأول",
+    "start_surah": 1,
+    "start_verse": 1,
+    "end_surah": 2,
+    "end_verse": 141,
+    "start_page": 1,
+    "end_page": 21
+  },
+  {
+    "id": 2,
+    "name": "الجزء الثاني",
+    "start_surah": 2,
+    "start_verse": 142,
+    "end_surah": 2,
+    "end_verse": 252,
+    "start_page": 22,
+    "end_page": 41
+  },
+  {
+    "id": 3,
+    "name": "الجزء الثالث",
+    "start_surah": 2,
+    "start_verse": 253,
+    "end_surah": 3,
+    "end_verse": 92,
+    "start_page": 42,
+    "end_page": 62
+  },
+  {
+    "id": 4,
+    "name": "الجزء الرابع",
+    "start_surah": 3,
+    "start_verse": 93,
+    "end_surah": 4,
+    "end_verse": 23,
+    "start_page": 63,
+    "end_page": 82
+  },
+  {
+    "id": 5,
+    "name": "الجزء الخامس",
+    "start_surah": 4,
+    "start_verse": 24,
+    "end_surah": 4,
+    "end_verse": 147,
+    "start_page": 83,
+    "end_page": 102
+  },
+  {
+    "id": 6,
+    "name": "الجزء السادس",
+    "start_surah": 4,
+    "start_verse": 148,
+    "end_surah": 5,
+    "end_verse": 81,
+    "start_page": 103,
+    "end_page": 122
+  },
+  {
+    "id": 7,
+    "name": "الجزء السابع",
+    "start_surah": 5,
+    "start_verse": 82,
+    "end_surah": 6,
+    "end_verse": 110,
+    "start_page": 123,
+    "end_page": 142
+  },
+  {
+    "id": 8,
+    "name": "الجزء الثامن",
+    "start_surah": 6,
+    "start_verse": 111,
+    "end_surah": 7,
+    "end_verse": 87,
+    "start_page": 143,
+    "end_page": 162
+  },
+  {
+    "id": 9,
+    "name": "الجزء التاسع",
+    "start_surah": 7,
+    "start_verse": 88,
+    "end_surah": 8,
+    "end_verse": 40,
+    "start_page": 163,
+    "end_page": 182
+  },
+  {
+    "id": 10,
+    "name": "الجزء العاشر",
+    "start_surah": 8,
+    "start_verse": 41,
+    "end_surah": 9,
+    "end_verse": 92,
+    "start_page": 183,
+    "end_page": 200
+  },
+  {
+    "id": 11,
+    "name": "الجزء الحادي عشر",
+    "start_surah": 9,
+    "start_verse": 93,
+    "end_surah": 11,
+    "end_verse": 5,
+    "start_page": 201,
+    "end_page": 221
+  },
+  {
+    "id": 12,
+    "name": "الجزء الثاني عشر",
+    "start_surah": 11,
+    "start_verse": 6,
+    "end_surah": 12,
+    "end_verse": 52,
+    "start_page": 222,
+    "end_page": 242
+  },
+  {
+    "id": 13,
+    "name": "الجزء الثالث عشر",
+    "start_surah": 12,
+    "start_verse": 53,
+    "end_surah": 14,
+    "end_verse": 52,
+    "start_page": 243,
+    "end_page": 261
+  },
+  {
+    "id": 14,
+    "name": "الجزء الرابع عشر",
+    "start_surah": 15,
+    "start_verse": 1,
+    "end_surah": 16,
+    "end_verse": 128,
+    "start_page": 262,
+    "end_page": 281
+  },
+  {
+    "id": 15,
+    "name": "الجزء الخامس عشر",
+    "start_surah": 17,
+    "start_verse": 1,
+    "end_surah": 18,
+    "end_verse": 74,
+    "start_page": 282,
+    "end_page": 301
+  },
+  {
+    "id": 16,
+    "name": "الجزء السادس عشر",
+    "start_surah": 18,
+    "start_verse": 75,
+    "end_surah": 20,
+    "end_verse": 135,
+    "start_page": 302,
+    "end_page": 321
+  },
+  {
+    "id": 17,
+    "name": "الجزء السابع عشر",
+    "start_surah": 21,
+    "start_verse": 1,
+    "end_surah": 22,
+    "end_verse": 78,
+    "start_page": 322,
+    "end_page": 341
+  },
+  {
+    "id": 18,
+    "name": "الجزء الثامن عشر",
+    "start_surah": 23,
+    "start_verse": 1,
+    "end_surah": 25,
+    "end_verse": 20,
+    "start_page": 342,
+    "end_page": 361
+  },
+  {
+    "id": 19,
+    "name": "الجزء التاسع عشر",
+    "start_surah": 25,
+    "start_verse": 21,
+    "end_surah": 27,
+    "end_verse": 55,
+    "start_page": 362,
+    "end_page": 381
+  },
+  {
+    "id": 20,
+    "name": "الجزء العشرون",
+    "start_surah": 27,
+    "start_verse": 56,
+    "end_surah": 29,
+    "end_verse": 45,
+    "start_page": 382,
+    "end_page": 401
+  },
+  {
+    "id": 21,
+    "name": "الجزء الحادي والعشرون",
+    "start_surah": 29,
+    "start_verse": 46,
+    "end_surah": 33,
+    "end_verse": 30,
+    "start_page": 402,
+    "end_page": 421
+  },
+  {
+    "id": 22,
+    "name": "الجزء الثاني والعشرون",
+    "start_surah": 33,
+    "start_verse": 31,
+    "end_surah": 36,
+    "end_verse": 27,
+    "start_page": 422,
+    "end_page": 441
+  },
+  {
+    "id": 23,
+    "name": "الجزء الثالث والعشرون",
+    "start_surah": 36,
+    "start_verse": 28,
+    "end_surah": 39,
+    "end_verse": 31,
+    "start_page": 442,
+    "end_page": 461
+  },
+  {
+    "id": 24,
+    "name": "الجزء الرابع والعشرون",
+    "start_surah": 39,
+    "start_verse": 32,
+    "end_surah": 41,
+    "end_verse": 46,
+    "start_page": 462,
+    "end_page": 481
+  },
+  {
+    "id": 25,
+    "name": "الجزء الخامس والعشرون",
+    "start_surah": 41,
+    "start_verse": 47,
+    "end_surah": 45,
+    "end_verse": 37,
+    "start_page": 482,
+    "end_page": 501
+  },
+  {
+    "id": 26,
+    "name": "الجزء السادس والعشرون",
+    "start_surah": 46,
+    "start_verse": 1,
+    "end_surah": 51,
+    "end_verse": 30,
+    "start_page": 502,
+    "end_page": 521
+  },
+  {
+    "id": 27,
+    "name": "الجزء السابع والعشرون",
+    "start_surah": 51,
+    "start_verse": 31,
+    "end_surah": 57,
+    "end_verse": 29,
+    "start_page": 522,
+    "end_page": 541
+  },
+  {
+    "id": 28,
+    "name": "الجزء الثامن والعشرون",
+    "start_surah": 58,
+    "start_verse": 1,
+    "end_surah": 66,
+    "end_verse": 12,
+    "start_page": 542,
+    "end_page": 561
+  },
+  {
+    "id": 29,
+    "name": "الجزء التاسع والعشرون",
+    "start_surah": 67,
+    "start_verse": 1,
+    "end_surah": 77,
+    "end_verse": 50,
+    "start_page": 562,
+    "end_page": 581
+  },
+  {
+    "id": 30,
+    "name": "الجزء الثلاثون",
+    "start_surah": 78,
+    "start_verse": 1,
+    "end_surah": 114,
+    "end_verse": 6,
+    "start_page": 582,
+    "end_page": 604
+  }
+]

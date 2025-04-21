@@ -4,6 +4,30 @@
 
 {% block page_title %}تعديل سجل الحفظ{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* تنسيقات زر المفضلة */
+    .favorite-checkbox {
+        display: none;
+    }
+    .favorite-label {
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+    .favorite-icon {
+        font-size: 1.25rem;
+        color: #d1d5db;
+        transition: color 0.3s;
+    }
+    .favorite-checkbox:checked + .favorite-label .favorite-icon {
+        color: #eab308;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
     <form method="post" action="{{ url_for('edit_memorization', id=memorization.id) }}">
@@ -98,6 +122,17 @@
                         class="w-4 h-4 text-primary focus:ring-primary">
                     <label for="rating_needs_review" class="ms-2 text-sm font-medium text-slate-700">يحتاج مراجعة</label>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Favorite Option -->
+        <div class="mb-4">
+            <div class="flex items-center">
+                <input type="checkbox" id="favorite" name="favorite" value="1" {% if memorization.favorite %}checked{% endif %} class="favorite-checkbox">
+                <label for="favorite" class="favorite-label">
+                    <i class="fas fa-star favorite-icon"></i>
+                    <span class="text-sm font-medium text-slate-700">إضافة إلى المفضلة</span>
+                </label>
             </div>
         </div>
         

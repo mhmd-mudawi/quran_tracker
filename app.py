@@ -191,6 +191,7 @@ def add_memorization():
         rating = request.form.get('rating')
         reciter = request.form.get('reciter')
         notes = request.form.get('notes')
+        favorite = 1 if request.form.get('favorite') else 0  # إضافة حقل المفضلة
         
         # Validate data
         if not date or not surah_id or not start_verse or not end_verse or not rating:
@@ -220,9 +221,9 @@ def add_memorization():
             # Insert into database
             conn = get_db_connection()
             conn.execute('''
-                INSERT INTO memorization (date, surah_id, start_verse, end_verse, pages, rating, reciter, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (date, surah_id, start_verse, end_verse, pages, rating, reciter, notes))
+                INSERT INTO memorization (date, surah_id, start_verse, end_verse, pages, rating, reciter, notes, favorite)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (date, surah_id, start_verse, end_verse, pages, rating, reciter, notes, favorite))
             conn.commit()
             conn.close()
             
@@ -242,16 +243,58 @@ def add_memorization():
 @app.route('/log')
 def memorization_log():
     conn = get_db_connection()
-    memorizations = conn.execute('''
+    
+    # الحصول على معلمات البحث والفلترة
+    search_query = request.args.get('search', '')
+    filter_surah = request.args.get('surah_id', '')
+    filter_rating = request.args.get('rating', '')
+    filter_favorites = request.args.get('favorites', '')
+    
+    # بناء استعلام SQL الأساسي
+    query = '''
         SELECT m.id, m.date, s.name as surah_name, s.id as surah_id, m.start_verse, m.end_verse, 
-               (m.end_verse - m.start_verse + 1) as verse_count, m.pages, m.rating, m.reciter, m.notes
+               (m.end_verse - m.start_verse + 1) as verse_count, m.pages, m.rating, m.reciter, m.notes, m.favorite
         FROM memorization m
         JOIN surahs s ON m.surah_id = s.id
-        ORDER BY m.date DESC
-    ''').fetchall()
+        WHERE 1=1
+    '''
+    params = []
+    
+    # إضافة شروط البحث إذا تم تقديمها
+    if search_query:
+        query += " AND (s.name LIKE ? OR m.notes LIKE ? OR m.reciter LIKE ?)"
+        search_term = f"%{search_query}%"
+        params.extend([search_term, search_term, search_term])
+    
+    if filter_surah:
+        query += " AND m.surah_id = ?"
+        params.append(filter_surah)
+    
+    if filter_rating:
+        query += " AND m.rating = ?"
+        params.append(filter_rating)
+    
+    if filter_favorites == '1':
+        query += " AND m.favorite = 1"
+    
+    # إكمال الاستعلام مع الترتيب
+    query += " ORDER BY m.date DESC"
+    
+    # تنفيذ الاستعلام
+    memorizations = conn.execute(query, params).fetchall()
+    
+    # الحصول على جميع السور للفلترة
+    surahs = conn.execute('SELECT id, name FROM surahs ORDER BY id').fetchall()
+    
     conn.close()
     
-    return render_template('memorization_log.html', memorizations=memorizations)
+    return render_template('memorization_log.html', 
+                           memorizations=memorizations, 
+                           surahs=surahs,
+                           search_query=search_query,
+                           filter_surah=filter_surah,
+                           filter_rating=filter_rating,
+                           filter_favorites=filter_favorites)
 
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 def edit_memorization(id):
@@ -271,6 +314,7 @@ def edit_memorization(id):
         rating = request.form.get('rating')
         reciter = request.form.get('reciter')
         notes = request.form.get('notes')
+        favorite = 1 if request.form.get('favorite') else 0  # تحديث حقل المفضلة
         
         # Validate data
         if not date or not surah_id or not start_verse or not end_verse or not rating:
@@ -300,9 +344,9 @@ def edit_memorization(id):
             # Update database
             conn.execute('''
                 UPDATE memorization
-                SET date = ?, surah_id = ?, start_verse = ?, end_verse = ?, pages = ?, rating = ?, reciter = ?, notes = ?
+                SET date = ?, surah_id = ?, start_verse = ?, end_verse = ?, pages = ?, rating = ?, reciter = ?, notes = ?, favorite = ?
                 WHERE id = ?
-            ''', (date, surah_id, start_verse, end_verse, pages, rating, reciter, notes, id))
+            ''', (date, surah_id, start_verse, end_verse, pages, rating, reciter, notes, favorite, id))
             conn.commit()
             
             flash('تم تحديث الحفظ بنجاح', 'success')
@@ -316,6 +360,28 @@ def edit_memorization(id):
     surahs = get_all_surahs()
     reciters = get_all_reciters()
     return render_template('edit_memorization.html', memorization=memorization, surahs=surahs, reciters=reciters)
+
+@app.route('/toggle-favorite/<int:id>')
+def toggle_favorite(id):
+    """تبديل حالة المفضلة لسجل حفظ معين"""
+    conn = get_db_connection()
+    memo = conn.execute('SELECT favorite FROM memorization WHERE id = ?', (id,)).fetchone()
+    
+    if not memo:
+        conn.close()
+        return jsonify({'success': False, 'message': 'سجل الحفظ غير موجود'})
+    
+    # تبديل حالة المفضلة
+    new_status = 0 if memo['favorite'] else 1
+    conn.execute('UPDATE memorization SET favorite = ? WHERE id = ?', (new_status, id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+        'success': True, 
+        'favorite': new_status,
+        'message': 'تمت إضافة الحفظ للمفضلة' if new_status else 'تمت إزالة الحفظ من المفضلة'
+    })
 
 @app.route('/delete/<int:id>')
 def delete_memorization(id):

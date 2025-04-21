@@ -4,7 +4,108 @@
 
 {% block page_title %}سجل الحفظ الكامل{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* تنسيقات أيقونة المفضلة */
+    .favorite-btn {
+        cursor: pointer;
+        color: #d1d5db;
+        transition: color 0.3s;
+    }
+    .favorite-btn.active {
+        color: #eab308;
+    }
+    
+    /* تنسيقات فلاتر البحث */
+    .filter-container {
+        position: relative;
+    }
+    .filter-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        width: 250px;
+        background-color: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        z-index: 10;
+        display: none;
+    }
+    .filter-dropdown.show {
+        display: block;
+    }
+    
+    /* تنسيقات الإشعارات */
+    .toast {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        padding: 0.75rem 1.5rem;
+        background-color: #047857;
+        color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .toast.show {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
+<!-- فلاتر البحث -->
+<div class="bg-white rounded-lg shadow p-4 mb-6">
+    <form id="filter-form" method="get" action="{{ url_for('memorization_log') }}" class="flex flex-wrap gap-4 items-center">
+        <!-- البحث بالنص -->
+        <div class="flex-grow min-w-[200px]">
+            <input type="text" name="search" placeholder="بحث..." value="{{ search_query }}"
+                class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+        </div>
+        
+        <!-- فلتر السورة -->
+        <div class="min-w-[180px]">
+            <select name="surah_id" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                <option value="">جميع السور</option>
+                {% for surah in surahs %}
+                    <option value="{{ surah.id }}" {% if filter_surah == surah.id|string %}selected{% endif %}>{{ surah.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- فلتر التقييم -->
+        <div class="min-w-[150px]">
+            <select name="rating" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                <option value="">جميع التقييمات</option>
+                <option value="متقن" {% if filter_rating == "متقن" %}selected{% endif %}>متقن</option>
+                <option value="متوسط" {% if filter_rating == "متوسط" %}selected{% endif %}>متوسط</option>
+                <option value="يحتاج مراجعة" {% if filter_rating == "يحتاج مراجعة" %}selected{% endif %}>يحتاج مراجعة</option>
+            </select>
+        </div>
+        
+        <!-- فلتر المفضلة -->
+        <div class="flex items-center">
+            <input type="checkbox" id="favorites_filter" name="favorites" value="1" {% if filter_favorites == "1" %}checked{% endif %}
+                class="w-4 h-4 text-primary focus:ring-primary">
+            <label for="favorites_filter" class="ms-2 text-sm font-medium text-slate-700">المفضلة فقط</label>
+        </div>
+        
+        <!-- أزرار البحث وإعادة التعيين -->
+        <div class="flex gap-2">
+            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
+                <i class="fas fa-search mr-1"></i> تصفية
+            </button>
+            <a href="{{ url_for('memorization_log') }}" class="px-4 py-2 bg-slate-300 text-slate-800 rounded-lg hover:bg-slate-400 transition-all duration-300">
+                <i class="fas fa-redo mr-1"></i> إعادة تعيين
+            </a>
+        </div>
+    </form>
+</div>
+
 <div class="bg-white rounded-lg shadow overflow-hidden">
     {% if memorizations %}
         <div class="overflow-x-auto">
@@ -20,7 +121,7 @@
                         <th class="py-3 px-4 text-right">الصفحات</th>
                         <th class="py-3 px-4 text-right">التقييم</th>
                         <th class="py-3 px-4 text-right">القارئ</th>
-                        <th class="py-3 px-4 text-right">الملاحظات</th>
+                        <th class="py-3 px-4 text-right">المفضلة</th>
                         <th class="py-3 px-4 text-right">الإجراءات</th>
                     </tr>
                 </thead>
@@ -50,7 +151,11 @@
                                     <span class="text-slate-400">-</span>
                                 {% endif %}
                             </td>
-                            <td class="py-3 px-4 max-w-xs truncate" title="{{ memo.notes }}">{{ memo.notes or '-' }}</td>
+                            <td class="py-3 px-4 text-center">
+                                <i class="fas fa-star favorite-btn {% if memo.favorite %}active{% endif %}" 
+                                   data-id="{{ memo.id }}" 
+                                   title="{% if memo.favorite %}إزالة من المفضلة{% else %}إضافة إلى المفضلة{% endif %}"></i>
+                            </td>
                             <td class="py-3 px-4">
                                 <div class="flex gap-2">
                                     <a href="{{ url_for('edit_memorization', id=memo.id) }}" class="text-blue-600 hover:text-blue-800" title="تعديل">
@@ -67,12 +172,35 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- إضافة إحصائيات السجل -->
+        <div class="p-4 bg-slate-50 border-t border-slate-200">
+            <div class="flex flex-wrap gap-4 justify-between items-center">
+                <div class="text-slate-600">
+                    <span class="font-bold">{{ memorizations|length }}</span> سجل حفظ
+                    {% if filter_surah or filter_rating or filter_favorites == "1" or search_query %}
+                        <span class="text-sm">(تصفية نشطة)</span>
+                    {% endif %}
+                </div>
+                
+                <a href="{{ url_for('add_memorization') }}" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
+                    <i class="fas fa-plus-circle mr-1"></i> إضافة حفظ جديد
+                </a>
+            </div>
+        </div>
     {% else %}
         <div class="text-center py-16 text-slate-500">
             <i class="fas fa-book-open text-5xl mb-4 text-slate-300"></i>
             <h3 class="text-xl font-bold mb-2">لا توجد سجلات حفظ</h3>
-            <p class="mb-4">لم يتم تسجيل أي حفظ حتى الآن</p>
-            <a href="{{ url_for('add_memorization') }}" class="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
+            {% if filter_surah or filter_rating or filter_favorites == "1" or search_query %}
+                <p class="mb-4">لا توجد نتائج مطابقة لعوامل التصفية المحددة</p>
+                <a href="{{ url_for('memorization_log') }}" class="px-5 py-2.5 bg-slate-300 text-slate-800 rounded-lg hover:bg-slate-400 transition-all duration-300 mr-2">
+                    <i class="fas fa-redo mr-1"></i> إعادة تعيين التصفية
+                </a>
+            {% else %}
+                <p class="mb-4">لم يتم تسجيل أي حفظ حتى الآن</p>
+            {% endif %}
+            <a href="{{ url_for('add_memorization') }}" class="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300 mt-2 inline-block">
                 <i class="fas fa-plus-circle mr-1"></i> إضافة حفظ جديد
             </a>
         </div>
@@ -94,24 +222,90 @@
         </div>
     </div>
 </div>
+
+<!-- إشعار تبديل المفضلة -->
+<div id="toast" class="toast">
+    <span id="toast-message"></span>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // دالة تأكيد الحذف
     function confirmDelete(id, surahName, startVerse, endVerse) {
-    // Set the item name in the modal
-    document.getElementById('deleteItemName').textContent = `${surahName} (${startVerse}-${endVerse})`;
-    
-    // Set the delete URL
-    document.getElementById('confirmDeleteBtn').href = "{{ url_for('delete_memorization', id=0) }}".replace('0', id);
-    
-    // Show the modal
-    document.getElementById('deleteModal').classList.remove('hidden');
-}
+        // Set the item name in the modal
+        document.getElementById('deleteItemName').textContent = `${surahName} (${startVerse}-${endVerse})`;
+        
+        // Set the delete URL
+        document.getElementById('confirmDeleteBtn').href = "{{ url_for('delete_memorization', id=0) }}".replace('0', id);
+        
+        // Show the modal
+        document.getElementById('deleteModal').classList.remove('hidden');
+    }
 
-// Cancel delete action
-document.getElementById('cancelDelete').addEventListener('click', function() {
-    document.getElementById('deleteModal').classList.add('hidden');
-});
+    // Cancel delete action
+    document.getElementById('cancelDelete').addEventListener('click', function() {
+        document.getElementById('deleteModal').classList.add('hidden');
+    });
+    
+    // تنفيذ ميزة المفضلة
+    document.addEventListener('DOMContentLoaded', function() {
+        // إضافة مستمعي أحداث لأزرار المفضلة
+        const favoriteButtons = document.querySelectorAll('.favorite-btn');
+        favoriteButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                toggleFavorite(id, this);
+            });
+        });
+        
+        // دالة لعرض الإشعارات
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            
+            toastMessage.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+        
+        // دالة تبديل حالة المفضلة
+        function toggleFavorite(id, button) {
+            fetch(`{{ url_for('toggle_favorite', id=0) }}`.replace('0', id))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // تحديث حالة الزر بصريًا
+                        if (data.favorite) {
+                            button.classList.add('active');
+                            button.title = "إزالة من المفضلة";
+                        } else {
+                            button.classList.remove('active');
+                            button.title = "إضافة إلى المفضلة";
+                        }
+                        
+                        // عرض إشعار
+                        showToast(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('حدث خطأ أثناء تحديث المفضلة');
+                });
+        }
+        
+        // إخفاء الإشعار عند النقر عليه
+        document.getElementById('toast').addEventListener('click', function() {
+            this.classList.remove('show');
+        });
+        
+        // تقديم النموذج عند تغيير خيار المفضلة
+        document.getElementById('favorites_filter').addEventListener('change', function() {
+            document.getElementById('filter-form').submit();
+        });
+    });
 </script>
 {% endblock %}

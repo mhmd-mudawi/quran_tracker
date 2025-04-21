@@ -1,61 +1,50 @@
 {% extends "base.html" %}
 
-{% block title %}إدارة قاعدة البيانات{% endblock %}
+{% block title %}استيراد قاعدة البيانات{% endblock %}
 
-{% block page_title %}إدارة قاعدة البيانات{% endblock %}
+{% block page_title %}استيراد قاعدة البيانات{% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <!-- تصدير قاعدة البيانات -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center gap-3 mb-4">
-            <div class="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-primary">
-                <i class="fas fa-file-export text-xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-primary">تصدير قاعدة البيانات</h3>
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+    <div class="flex items-center gap-3 mb-6">
+        <div class="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-primary">
+            <i class="fas fa-file-import text-xl"></i>
         </div>
-        
-        <p class="text-slate-600 mb-6">
-            قم بتصدير قاعدة البيانات الحالية وجميع معلومات الحفظ والقراء والإعدادات إلى ملف يمكنك الاحتفاظ به كنسخة احتياطية أو استخدامه لنقل البيانات إلى جهاز آخر.
-        </p>
-        
-        <a href="{{ url_for('export_database') }}" class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
-            <i class="fas fa-download"></i>
-            <span>تنزيل نسخة احتياطية</span>
-        </a>
+        <h3 class="text-xl font-bold text-primary">استيراد ملف قاعدة البيانات</h3>
     </div>
     
-    <!-- استيراد قاعدة البيانات -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center gap-3 mb-4">
-            <div class="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-primary">
-                <i class="fas fa-file-import text-xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-primary">استيراد قاعدة البيانات</h3>
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        <p class="text-yellow-800 flex items-start gap-2">
+            <i class="fas fa-exclamation-triangle mt-1"></i>
+            <span>تنبيه: سيؤدي استيراد قاعدة بيانات جديدة إلى استبدال جميع البيانات الحالية. تأكد من عمل نسخة احتياطية إذا كنت ترغب في الاحتفاظ بالبيانات الحالية.</span>
+        </p>
+    </div>
+    
+    <form method="post" enctype="multipart/form-data" class="mb-6">
+        <div class="mb-6">
+            <label for="database_file" class="block mb-2 text-sm font-medium text-slate-700">اختر ملف قاعدة البيانات (.db)</label>
+            <input type="file" id="database_file" name="database_file" accept=".db" 
+                class="block w-full border border-slate-300 rounded-lg cursor-pointer bg-white focus:outline-none">
+            <p class="mt-1 text-sm text-slate-500">يجب أن يكون الملف بصيغة .db (SQLite)</p>
         </div>
         
-        <p class="text-slate-600 mb-6">
-            قم باستيراد قاعدة بيانات من نسخة احتياطية سابقة. سيؤدي ذلك إلى استبدال جميع البيانات الحالية بالبيانات الموجودة في النسخة الاحتياطية.
-        </p>
-        
-        <a href="{{ url_for('import_database') }}" class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
-            <i class="fas fa-upload"></i>
-            <span>استيراد نسخة احتياطية</span>
-        </a>
-    </div>
-</div>
-
-<!-- تنبيهات ومعلومات هامة -->
-<div class="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-    <h3 class="text-lg font-bold text-yellow-800 mb-4">
-        <i class="fas fa-exclamation-triangle mr-2"></i>
-        ملاحظات هامة
-    </h3>
+        <div class="flex justify-between">
+            <a href="{{ url_for('database_management') }}" class="px-5 py-2.5 bg-slate-300 text-slate-800 rounded-lg hover:bg-slate-400 transition-all duration-300">
+                <i class="fas fa-arrow-right mr-1"></i> رجوع
+            </a>
+            <button type="submit" class="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
+                <i class="fas fa-upload mr-1"></i> استيراد
+            </button>
+        </div>
+    </form>
     
-    <ul class="list-disc list-inside space-y-2 text-yellow-800">
-        <li>عند استيراد قاعدة بيانات، سيتم استبدال <strong>جميع البيانات الحالية</strong>. تأكد من عمل نسخة احتياطية أولاً إذا كنت ترغب في الاحتفاظ بالبيانات الحالية.</li>
-        <li>ملف النسخة الاحتياطية هو ملف ZIP يحتوي على قاعدة بيانات SQLite وملفات البيانات المساعدة.</li>
-        <li>يُفضل إغلاق التطبيق وإعادة تشغيله بعد استيراد قاعدة بيانات جديدة لضمان تحميل جميع البيانات بشكل صحيح.</li>
-    </ul>
+    <div class="mt-8">
+        <h4 class="font-bold text-slate-700 mb-3">ملاحظات هامة:</h4>
+        <ul class="list-disc list-inside space-y-2 text-slate-600">
+            <li>تأكد من أن ملف قاعدة البيانات الذي تقوم باستيراده صحيح وغير تالف.</li>
+            <li>يفضل استيراد ملفات قاعدة بيانات تم تصديرها من نفس إصدار التطبيق.</li>
+            <li>بعد الاستيراد، قد تحتاج إلى إعادة تشغيل التطبيق لتطبيق التغييرات بشكل كامل.</li>
+        </ul>
+    </div>
 </div>
 {% endblock %}

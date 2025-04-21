@@ -16,12 +16,12 @@
         </div>
         
         <p class="text-slate-600 mb-6">
-            قم بتصدير قاعدة البيانات الحالية وجميع معلومات الحفظ والقراء والإعدادات إلى ملف يمكنك الاحتفاظ به كنسخة احتياطية أو استخدامه لنقل البيانات إلى جهاز آخر.
+            قم بتصدير قاعدة البيانات الحالية وجميع معلومات الحفظ والقراء والإعدادات إلى ملف .db يمكنك الاحتفاظ به كنسخة احتياطية أو استخدامه لنقل البيانات إلى جهاز آخر.
         </p>
         
         <a href="{{ url_for('export_database') }}" class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
             <i class="fas fa-download"></i>
-            <span>تنزيل نسخة احتياطية</span>
+            <span>تنزيل ملف قاعدة البيانات</span>
         </a>
     </div>
     
@@ -40,7 +40,7 @@
         
         <a href="{{ url_for('import_database') }}" class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
             <i class="fas fa-upload"></i>
-            <span>استيراد نسخة احتياطية</span>
+            <span>استيراد ملف قاعدة البيانات</span>
         </a>
     </div>
 </div>
@@ -54,7 +54,7 @@
     
     <ul class="list-disc list-inside space-y-2 text-yellow-800">
         <li>عند استيراد قاعدة بيانات، سيتم استبدال <strong>جميع البيانات الحالية</strong>. تأكد من عمل نسخة احتياطية أولاً إذا كنت ترغب في الاحتفاظ بالبيانات الحالية.</li>
-        <li>ملف النسخة الاحتياطية هو ملف ZIP يحتوي على قاعدة بيانات SQLite وملفات البيانات المساعدة.</li>
+        <li>ملف النسخة الاحتياطية هو ملف قاعدة بيانات SQLite (.db) يحتوي على جميع بيانات التطبيق.</li>
         <li>يُفضل إغلاق التطبيق وإعادة تشغيله بعد استيراد قاعدة بيانات جديدة لضمان تحميل جميع البيانات بشكل صحيح.</li>
     </ul>
 </div>

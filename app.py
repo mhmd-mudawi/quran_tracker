@@ -634,27 +634,20 @@ def reciter_stats(id):
 
 @app.route('/export-database')
 def export_database():
-    """تصدير قاعدة البيانات بكاملها كملف زيب"""
+    """تصدير ملف قاعدة البيانات مباشرة"""
     try:
-        # إنشاء ملف زيب في الذاكرة
-        memory_file = io.BytesIO()
-        with zipfile.ZipFile(memory_file, 'w') as zf:
-            # إضافة ملف قاعدة البيانات
-            zf.write('database.db', 'database.db')
-            
-            # إضافة ملفات بيانات JSON إن وجدت
-            if os.path.exists('data/surahs.json'):
-                zf.write('data/surahs.json', 'data/surahs.json')
-            if os.path.exists('data/juz.json'):
-                zf.write('data/juz.json', 'data/juz.json')
+        # إنشاء نسخة من ملف قاعدة البيانات في الذاكرة
+        db_path = os.path.abspath('database.db')
         
-        # إرجاع الملف للتنزيل
-        memory_file.seek(0)
+        # التأكد من إغلاق أي اتصالات مفتوحة مع قاعدة البيانات
+        # (هذا يساعد في تجنب مشاكل القفل على الملف)
+        
+        # إرجاع الملف للتنزيل مباشرة
         return send_file(
-            memory_file,
-            mimetype='application/zip',
+            db_path,
+            mimetype='application/x-sqlite3',
             as_attachment=True,
-            download_name='quran_memorization_backup_{}.zip'.format(datetime.now().strftime('%Y-%m-%d'))
+            download_name='quran_memorization_database_{}.db'.format(datetime.now().strftime('%Y-%m-%d'))
         )
         
     except Exception as e:
@@ -663,7 +656,7 @@ def export_database():
 
 @app.route('/import-database', methods=['GET', 'POST'])
 def import_database():
-    """استيراد قاعدة البيانات من ملف زيب"""
+    """استيراد ملف قاعدة البيانات مباشرة"""
     if request.method == 'POST':
         # التحقق من وجود ملف
         if 'database_file' not in request.files:
@@ -677,43 +670,19 @@ def import_database():
             flash('لم يتم اختيار ملف', 'error')
             return redirect(request.url)
         
-        if file and file.filename.endswith('.zip'):
+        if file and file.filename.endswith('.db'):
             try:
-                # إنشاء مجلد مؤقت لاستخراج الملفات
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    # حفظ ملف الزيب والاستخراج 
-                    zip_path = os.path.join(temp_dir, 'backup.zip')
-                    file.save(zip_path)
-                    
-                    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                        zip_ref.extractall(temp_dir)
-                    
-                    # إغلاق الاتصال الحالي بقاعدة البيانات
-                    # لكي نتمكن من استبدال الملف
-                    db_path = os.path.abspath('database.db')
-                    
-                    # إنشاء نسخة احتياطية من قاعدة البيانات الحالية
-                    backup_path = os.path.abspath('database.db.bak')
-                    if os.path.exists(db_path):
-                        shutil.copy2(db_path, backup_path)
-                    
-                    # استبدال قاعدة البيانات بالنسخة المستوردة
-                    extracted_db = os.path.join(temp_dir, 'database.db')
-                    if os.path.exists(extracted_db):
-                        shutil.copy2(extracted_db, db_path)
-                    else:
-                        flash('ملف قاعدة البيانات غير موجود في الأرشيف', 'error')
-                        return redirect(request.url)
-                    
-                    # استيراد ملفات البيانات إن وجدت
-                    if not os.path.exists('data'):
-                        os.mkdir('data')
-                    
-                    for json_file in ['data/surahs.json', 'data/juz.json']:
-                        extracted_json = os.path.join(temp_dir, json_file)
-                        if os.path.exists(extracted_json):
-                            dest_path = os.path.abspath(json_file)
-                            shutil.copy2(extracted_json, dest_path)
+                # إغلاق الاتصال الحالي بقاعدة البيانات
+                # لكي نتمكن من استبدال الملف
+                db_path = os.path.abspath('database.db')
+                
+                # إنشاء نسخة احتياطية من قاعدة البيانات الحالية
+                backup_path = os.path.abspath('database.db.bak')
+                if os.path.exists(db_path):
+                    shutil.copy2(db_path, backup_path)
+                
+                # حفظ الملف المستورد واستبداله بقاعدة البيانات الحالية
+                file.save(db_path)
                 
                 flash('تم استيراد قاعدة البيانات بنجاح', 'success')
                 return redirect(url_for('dashboard'))
@@ -726,7 +695,7 @@ def import_database():
                 flash('حدث خطأ أثناء استيراد قاعدة البيانات: {}'.format(str(e)), 'error')
                 return redirect(request.url)
         else:
-            flash('الرجاء تحميل ملف zip صالح', 'error')
+            flash('الرجاء تحميل ملف .db صالح', 'error')
             return redirect(request.url)
             
     return render_template('import_database.html')

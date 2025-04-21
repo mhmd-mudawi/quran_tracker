@@ -401,6 +401,12 @@ def delete_memorization(id):
 @app.route('/surah-progress')
 def surah_progress():
     conn = get_db_connection()
+    
+    # الحصول على معلمات الفلترة
+    filter_query = request.args.get('search', '')
+    filter_progress = request.args.get('progress', '')  # 'completed', 'in-progress', 'not-started'
+    
+    # الحصول على جميع السور
     surahs = conn.execute('SELECT * FROM surahs ORDER BY id').fetchall()
     
     # Get memorized verses for each surah
@@ -428,19 +434,63 @@ def surah_progress():
         
         # Calculate percentage
         percentage = (len(memorized_verses) / surah['verses']) * 100 if surah['verses'] > 0 else 0
+        percentage_rounded = round(percentage, 2)
         
-        surah_progress.append({
+        # تحديد حالة الحفظ
+        if percentage_rounded == 100:
+            status = 'completed'  # مكتمل
+        elif percentage_rounded > 0:
+            status = 'in-progress'  # جاري الحفظ
+        else:
+            status = 'not-started'  # لم يبدأ
+        
+        # إضافة معلومات السورة إلى القائمة
+        surah_data = {
             'id': surah['id'],
             'name': surah['name'],
             'name_en': surah['name_en'],
             'total_verses': surah['verses'],
             'memorized_verses': len(memorized_verses),
             'memorized_pages': memorized_pages,
-            'percentage': round(percentage, 2)
-        })
+            'percentage': percentage_rounded,
+            'status': status
+        }
+        surah_progress.append(surah_data)
+    
+    # تطبيق الفلترة
+    filtered_progress = []
+    for surah in surah_progress:
+        # فلترة البحث النصي (اسم السورة)
+        name_match = filter_query.lower() in surah['name'].lower() or filter_query.lower() in (surah['name_en'].lower() if surah['name_en'] else '')
+        
+        # فلترة حالة التقدم
+        progress_match = True
+        if filter_progress:
+            progress_match = surah['status'] == filter_progress
+        
+        # إضافة السورة للنتائج إذا تطابقت مع جميع الفلاتر
+        if name_match and progress_match:
+            filtered_progress.append(surah)
     
     conn.close()
-    return render_template('surah_progress.html', surahs=surah_progress)
+    
+    # حساب إحصائيات للسور المفلترة
+    total_verses = sum(surah['total_verses'] for surah in filtered_progress)
+    memorized_verses = sum(surah['memorized_verses'] for surah in filtered_progress)
+    overall_percentage = round((memorized_verses / total_verses * 100) if total_verses > 0 else 0, 2)
+    
+    return render_template('surah_progress.html', 
+                           surahs=filtered_progress,
+                           filter_query=filter_query,
+                           filter_progress=filter_progress,
+                           stats={
+                               'completed': sum(1 for s in filtered_progress if s['status'] == 'completed'),
+                               'in_progress': sum(1 for s in filtered_progress if s['status'] == 'in-progress'),
+                               'not_started': sum(1 for s in filtered_progress if s['status'] == 'not-started'),
+                               'total_verses': total_verses,
+                               'memorized_verses': memorized_verses,
+                               'overall_percentage': overall_percentage
+                           })
 
 @app.route('/juz-progress')
 def juz_progress():

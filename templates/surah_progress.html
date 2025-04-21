@@ -5,68 +5,53 @@
 {% block page_title %}تقدم الحفظ حسب السور{% endblock %}
 
 {% block content %}
-<div class="bg-white rounded-lg shadow overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="min-w-full bg-white">
-            <thead class="bg-slate-100">
-                <tr>
-                    <th class="py-3 px-4 text-right">#</th>
-                    <th class="py-3 px-4 text-right">السورة</th>
-                    <th class="py-3 px-4 text-right">عدد الآيات الكلي</th>
-                    <th class="py-3 px-4 text-right">الآيات المحفوظة</th>
-                    <th class="py-3 px-4 text-right">الصفحات المحفوظة</th>
-                    <th class="py-3 px-4 text-right">نسبة الحفظ</th>
-                    <th class="py-3 px-4 text-right">الحالة</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                {% for surah in surahs %}
-                    <tr class="hover:bg-slate-50">
-                        <td class="py-3 px-4">{{ surah.id }}</td>
-                        <td class="py-3 px-4 font-bold">{{ surah.name }}</td>
-                        <td class="py-3 px-4">{{ surah.total_verses }}</td>
-                        <td class="py-3 px-4">{{ surah.memorized_verses }}</td>
-                        <td class="py-3 px-4">{{ surah.memorized_pages }}</td>
-                        <td class="py-3 px-4">
-                            <div class="flex items-center gap-2">
-                                <div class="flex-grow bg-slate-200 rounded-full h-2.5">
-                                    <div class="bg-primary h-2.5 rounded-full" style="width: {{ surah.percentage }}%"></div>
-                                </div>
-                                <span class="text-sm font-medium">{{ surah.percentage }}%</span>
-                            </div>
-                        </td>
-                        <td class="py-3 px-4">
-                            {% if surah.percentage == 100 %}
-                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">مكتمل</span>
-                            {% elif surah.percentage > 0 %}
-                                <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">جاري الحفظ</span>
-                            {% else %}
-                                <span class="bg-slate-100 text-slate-800 px-2 py-1 rounded-full text-xs">لم يبدأ</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<!-- فلاتر البحث -->
+<div class="bg-white rounded-lg shadow p-4 mb-6">
+    <form id="filter-form" method="get" action="{{ url_for('surah_progress') }}" class="flex flex-wrap gap-4 items-center">
+        <!-- البحث بالنص -->
+        <div class="flex-grow min-w-[200px]">
+            <input type="text" name="search" placeholder="بحث عن سورة..." value="{{ filter_query }}"
+                class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+        </div>
+        
+        <!-- فلتر التقدم -->
+        <div class="min-w-[180px]">
+            <select name="progress" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                <option value="">جميع السور</option>
+                <option value="completed" {% if filter_progress == "completed" %}selected{% endif %}>السور المكتملة</option>
+                <option value="in-progress" {% if filter_progress == "in-progress" %}selected{% endif %}>قيد الحفظ</option>
+                <option value="not-started" {% if filter_progress == "not-started" %}selected{% endif %}>لم يبدأ الحفظ</option>
+            </select>
+        </div>
+        
+        <!-- أزرار البحث وإعادة التعيين -->
+        <div class="flex gap-2">
+            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
+                <i class="fas fa-search mr-1"></i> تصفية
+            </button>
+            <a href="{{ url_for('surah_progress') }}" class="px-4 py-2 bg-slate-300 text-slate-800 rounded-lg hover:bg-slate-400 transition-all duration-300">
+                <i class="fas fa-redo mr-1"></i> إعادة تعيين
+            </a>
+        </div>
+    </form>
 </div>
 
-<!-- Summary Stats -->
-<div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- ملخص التقدم -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
     <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-lg font-bold text-primary mb-4">ملخص الحفظ</h3>
         <ul class="space-y-2">
             <li class="flex justify-between">
                 <span class="text-slate-600">عدد السور المكتملة:</span>
-                <span class="font-bold">{{ surahs|selectattr('percentage', 'eq', 100)|list|length }}</span>
+                <span class="font-bold">{{ stats.completed }}</span>
             </li>
             <li class="flex justify-between">
-                <span class="text-slate-600">عدد السور جاري حفظها:</span>
-                <span class="font-bold">{{ surahs|selectattr('percentage', 'gt', 0)|selectattr('percentage', 'ne', 100)|list|length }}</span>
+                <span class="text-slate-600">عدد السور قيد الحفظ:</span>
+                <span class="font-bold">{{ stats.in_progress }}</span>
             </li>
             <li class="flex justify-between">
                 <span class="text-slate-600">عدد السور المتبقية:</span>
-                <span class="font-bold">{{ surahs|selectattr('percentage', 'eq', 0)|list|length }}</span>
+                <span class="font-bold">{{ stats.not_started }}</span>
             </li>
         </ul>
     </div>
@@ -82,20 +67,89 @@
                 </div>
                 <div class="text-right">
                     <span class="text-xs font-semibold inline-block text-primary">
-                        {{ (surahs|sum(attribute='memorized_verses') / surahs|sum(attribute='total_verses') * 100)|round(2) }}%
+                        {{ stats.overall_percentage }}%
                     </span>
                 </div>
             </div>
             <div class="overflow-hidden h-6 mb-4 text-xs flex rounded-lg bg-teal-100">
-                <div style="width:{{ (surahs|sum(attribute='memorized_verses') / surahs|sum(attribute='total_verses') * 100)|round(2) }}%" 
+                <div style="width:{{ stats.overall_percentage }}%" 
                      class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-500">
                 </div>
             </div>
             <div class="text-center text-slate-600">
-                <span class="font-bold">{{ surahs|sum(attribute='memorized_verses') }}</span> آية محفوظة من أصل 
-                <span class="font-bold">{{ surahs|sum(attribute='total_verses') }}</span> آية
+                <span class="font-bold">{{ stats.memorized_verses }}</span> آية محفوظة من أصل 
+                <span class="font-bold">{{ stats.total_verses }}</span> آية
             </div>
         </div>
     </div>
+</div>
+
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    {% if surahs %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white">
+                <thead class="bg-slate-100">
+                    <tr>
+                        <th class="py-3 px-4 text-right">#</th>
+                        <th class="py-3 px-4 text-right">السورة</th>
+                        <th class="py-3 px-4 text-right">عدد الآيات الكلي</th>
+                        <th class="py-3 px-4 text-right">الآيات المحفوظة</th>
+                        <th class="py-3 px-4 text-right">الصفحات المحفوظة</th>
+                        <th class="py-3 px-4 text-right">نسبة الحفظ</th>
+                        <th class="py-3 px-4 text-right">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for surah in surahs %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4">{{ surah.id }}</td>
+                            <td class="py-3 px-4 font-bold">{{ surah.name }}</td>
+                            <td class="py-3 px-4">{{ surah.total_verses }}</td>
+                            <td class="py-3 px-4">{{ surah.memorized_verses }}</td>
+                            <td class="py-3 px-4">{{ surah.memorized_pages }}</td>
+                            <td class="py-3 px-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-grow bg-slate-200 rounded-full h-2.5">
+                                        <div class="bg-primary h-2.5 rounded-full" style="width: {{ surah.percentage }}%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium">{{ surah.percentage }}%</span>
+                                </div>
+                            </td>
+                            <td class="py-3 px-4">
+                                {% if surah.percentage == 100 %}
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">مكتمل</span>
+                                {% elif surah.percentage > 0 %}
+                                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">جاري الحفظ</span>
+                                {% else %}
+                                    <span class="bg-slate-100 text-slate-800 px-2 py-1 rounded-full text-xs">لم يبدأ</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- إضافة إحصائيات السجل -->
+        <div class="p-4 bg-slate-50 border-t border-slate-200">
+            <div class="flex flex-wrap gap-4 justify-between items-center">
+                <div class="text-slate-600">
+                    <span class="font-bold">{{ surahs|length }}</span> سورة
+                    {% if filter_query or filter_progress %}
+                        <span class="text-sm">(تصفية نشطة)</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-16 text-slate-500">
+            <i class="fas fa-book-open text-5xl mb-4 text-slate-300"></i>
+            <h3 class="text-xl font-bold mb-2">لا توجد نتائج</h3>
+            <p class="mb-4">لا توجد سور مطابقة لمعايير البحث</p>
+            <a href="{{ url_for('surah_progress') }}" class="px-5 py-2.5 bg-slate-300 text-slate-800 rounded-lg hover:bg-slate-400 transition-all duration-300">
+                <i class="fas fa-redo mr-1"></i> إعادة تعيين الفلترة
+            </a>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

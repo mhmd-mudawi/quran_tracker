@@ -125,15 +125,15 @@ def get_memorization_stats():
 def get_memorization_data_for_chart():
     conn = get_db_connection()
     
-    # Get memorization data by juz
-    juz_data = []
+    # Get all juz data
     all_juz = get_all_juz()
+    juz_data = []
     
     for juz in all_juz:
         # Calculate total verses in this juz
         total_juz_verses = 0
         
-        # Find all surahs in this juz
+        # Calculate juz total verses
         if juz['start_surah'] == juz['end_surah']:
             # If juz is within a single surah
             total_juz_verses = juz['end_verse'] - juz['start_verse'] + 1
@@ -151,14 +151,17 @@ def get_memorization_data_for_chart():
             # Get last surah's verses (from start to end_verse)
             total_juz_verses += juz['end_verse']
         
-        # Get memorized verses in this juz range
-        memorized_verses = 0
+        # Create sets to track unique memorized verses in this juz
+        memorized_verses_set = set()
+        
+        # Get all memorizations that might overlap with this juz
         memorizations = conn.execute('''
             SELECT m.surah_id, m.start_verse, m.end_verse
             FROM memorization m
             WHERE m.surah_id >= ? AND m.surah_id <= ?
         ''', (juz['start_surah'], juz['end_surah'])).fetchall()
         
+        # For each memorization, calculate which verses fall in this juz
         for memo in memorizations:
             surah_id = memo['surah_id']
             start_verse = memo['start_verse']
@@ -170,33 +173,52 @@ def get_memorization_data_for_chart():
                 overlap_start = max(start_verse, juz['start_verse'])
                 overlap_end = min(end_verse, juz['end_verse'])
                 if overlap_start <= overlap_end:
-                    memorized_verses += overlap_end - overlap_start + 1
+                    # Add each verse to set to avoid duplicates
+                    for v in range(overlap_start, overlap_end + 1):
+                        memorized_verses_set.add(f"{surah_id}:{v}")
                     
             elif surah_id == juz['start_surah']:
                 # Only start surah matches
-                if start_verse <= juz['start_verse']:
-                    memorized_verses += end_verse - juz['start_verse'] + 1
-                else:
-                    memorized_verses += end_verse - start_verse + 1
+                overlap_start = max(start_verse, juz['start_verse'])
+                if overlap_start <= end_verse:
+                    # Add each verse to set to avoid duplicates
+                    for v in range(overlap_start, end_verse + 1):
+                        memorized_verses_set.add(f"{surah_id}:{v}")
                     
             elif surah_id == juz['end_surah']:
                 # Only end surah matches
-                if end_verse >= juz['end_verse']:
-                    memorized_verses += juz['end_verse'] - start_verse + 1
-                else:
-                    memorized_verses += end_verse - start_verse + 1
+                overlap_end = min(end_verse, juz['end_verse'])
+                if start_verse <= overlap_end:
+                    # Add each verse to set to avoid duplicates
+                    for v in range(start_verse, overlap_end + 1):
+                        memorized_verses_set.add(f"{surah_id}:{v}")
                     
             elif juz['start_surah'] < surah_id < juz['end_surah']:
                 # Surah is completely within the juz
-                memorized_verses += end_verse - start_verse + 1
+                # Add each verse to set to avoid duplicates
+                for v in range(start_verse, end_verse + 1):
+                    memorized_verses_set.add(f"{surah_id}:{v}")
         
+        # Calculate unique memorized verses count
+        memorized_verses = len(memorized_verses_set)
+        
+        # Calculate percentage (prevent division by zero)
         percentage = (memorized_verses / total_juz_verses) * 100 if total_juz_verses > 0 else 0
         
-        juz_data.append({
-            'juz_number': juz['id'],
-            'juz_name': juz['name'],
-            'percentage': round(percentage, 2)
-        })
+        # Only add juz with actual progress to the chart
+        if percentage > 0:
+            juz_data.append({
+                'juz_number': juz['id'],
+                'juz_name': juz['name'],
+                'percentage': round(percentage, 2)
+            })
+        else:
+            # For juz with no progress, use percentage 0
+            juz_data.append({
+                'juz_number': juz['id'],
+                'juz_name': juz['name'],
+                'percentage': 0
+            })
     
     conn.close()
     return juz_data

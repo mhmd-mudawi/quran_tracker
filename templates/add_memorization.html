@@ -85,7 +85,7 @@
             <select id="surah_id" name="surah_id" required class="hidden-select">
                 <option value="">اختر السورة</option>
                 {% for surah in surahs %}
-                    <option value="{{ surah.id }}" data-verses="{{ surah.verses }}">{{ surah.name }} ({{ surah.verses }} آية)</option>
+                    <option value="{{ surah.id }}" data-verses="{{ surah.verses }}" data-start-page="{{ surah.start_page }}" data-end-page="{{ surah.end_page }}">{{ surah.name }} ({{ surah.verses }} آية)</option>
                 {% endfor %}
             </select>
             
@@ -116,11 +116,28 @@
                 class="block w-full p-2.5 border border-slate-200 bg-slate-50 rounded-lg" value="0">
         </div>
         
-        <!-- Pages -->
+        <!-- Pages Range (New) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Start Page -->
+            <div>
+                <label for="start_page" class="block mb-2 text-sm font-medium text-slate-700">من الصفحة <span class="text-red-500">*</span></label>
+                <input type="number" id="start_page" name="start_page" min="1" max="604" required
+                    class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+            </div>
+            
+            <!-- End Page -->
+            <div>
+                <label for="end_page" class="block mb-2 text-sm font-medium text-slate-700">إلى الصفحة <span class="text-red-500">*</span></label>
+                <input type="number" id="end_page" name="end_page" min="1" max="604" required
+                    class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+            </div>
+        </div>
+        
+        <!-- Page Count (Calculated) -->
         <div class="mb-4">
             <label for="pages" class="block mb-2 text-sm font-medium text-slate-700">عدد الصفحات</label>
-            <input type="number" id="pages" name="pages" min="0"
-                class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+            <input type="number" id="pages" name="pages" min="0" readonly
+                class="block w-full p-2.5 border border-slate-200 bg-slate-50 rounded-lg">
         </div>
         
         <!-- Reciter Selection -->
@@ -188,6 +205,23 @@
         </div>
     </form>
 </div>
+
+<!-- Modal for Overlapping Range Warning -->
+<div id="warningModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-xl font-bold text-red-600 mb-4">تداخل في نطاق الحفظ</h3>
+        <p class="mb-4 text-slate-700" id="warningMessage"></p>
+        <p class="mb-6 text-slate-600">يرجى تعديل النطاق المحدد أو تعديل السجل السابق لتجنب الحسابات الخاطئة.</p>
+        <div class="flex justify-end gap-3">
+            <button id="closeWarning" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 transition-all duration-300">
+                فهمت
+            </button>
+            <a id="editExistingBtn" href="#" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-dark transition-all duration-300">
+                تعديل السجل السابق
+            </a>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -197,10 +231,22 @@
     const startVerseInput = document.getElementById('start_verse');
     const endVerseInput = document.getElementById('end_verse');
     const verseCountInput = document.getElementById('verse_count');
+    const startPageInput = document.getElementById('start_page');
+    const endPageInput = document.getElementById('end_page');
+    const pagesInput = document.getElementById('pages');
     const surahSearchInput = document.getElementById('surah_search');
     const surahSuggestions = document.getElementById('surah_suggestions');
     const selectedSurahDisplay = document.getElementById('selected_surah_display');
     const form = document.getElementById('memorization-form');
+    const warningModal = document.getElementById('warningModal');
+    const warningMessage = document.getElementById('warningMessage');
+    const closeWarningBtn = document.getElementById('closeWarning');
+    const editExistingBtn = document.getElementById('editExistingBtn');
+    
+    // Warning modal controls
+    closeWarningBtn.addEventListener('click', function() {
+        warningModal.classList.add('hidden');
+    });
     
     // Store all surahs for search
     const surahs = [];
@@ -209,7 +255,9 @@
             surahs.push({
                 id: option.value,
                 name: option.textContent,
-                verses: option.getAttribute('data-verses')
+                verses: option.getAttribute('data-verses'),
+                startPage: option.getAttribute('data-start-page'),
+                endPage: option.getAttribute('data-end-page')
             });
         }
     });
@@ -226,12 +274,53 @@
         }
     }
     
-    // Event listeners for verse inputs
+    // Function to update page count
+    function updatePageCount() {
+        const startPage = parseInt(startPageInput.value) || 0;
+        const endPage = parseInt(endPageInput.value) || 0;
+        
+        if (startPage > 0 && endPage > 0 && endPage >= startPage) {
+            pagesInput.value = endPage - startPage + 1;
+        } else {
+            pagesInput.value = 0;
+        }
+    }
+    
+    // Event listeners for verse and page inputs
     startVerseInput.addEventListener('input', updateVerseCount);
     endVerseInput.addEventListener('input', updateVerseCount);
+    startPageInput.addEventListener('input', updatePageCount);
+    endPageInput.addEventListener('input', updatePageCount);
+    
+    // Function to check for overlapping ranges
+    async function checkOverlappingRanges() {
+        const surahId = surahSelect.value;
+        const startVerse = parseInt(startVerseInput.value);
+        const endVerse = parseInt(endVerseInput.value);
+        
+        if (!surahId || !startVerse || !endVerse) return true; // Skip validation if incomplete
+        
+        try {
+            const response = await fetch(`/check-overlap?surah_id=${surahId}&start_verse=${startVerse}&end_verse=${endVerse}`);
+            const data = await response.json();
+            
+            if (data.overlap) {
+                // Show warning modal
+                warningMessage.textContent = `هناك تداخل مع سجل حفظ سابق: سورة ${data.surah_name} من الآية ${data.start_verse} إلى ${data.end_verse}.`;
+                editExistingBtn.href = `/edit/${data.memorization_id}`;
+                warningModal.classList.remove('hidden');
+                return false; // Prevent form submission
+            }
+            
+            return true; // No overlap, allow form submission
+        } catch (error) {
+            console.error('Error checking overlap:', error);
+            return true; // In case of error, allow form submission
+        }
+    }
     
     // Function to set the selected surah
-    function selectSurah(id, name, verses) {
+    function selectSurah(id, name, verses, startPage, endPage) {
         // Set the value in the hidden select
         surahSelect.value = id;
         
@@ -247,7 +336,16 @@
         startVerseInput.max = verses;
         endVerseInput.max = verses;
         
+        // Reset page inputs
+        startPageInput.value = startPage;
+        endPageInput.value = startPage;
+        startPageInput.min = startPage;
+        startPageInput.max = endPage;
+        endPageInput.min = startPage;
+        endPageInput.max = endPage;
+        
         updateVerseCount();
+        updatePageCount();
         
         // Trigger change event on the select for any other listeners
         surahSelect.dispatchEvent(new Event('change'));
@@ -277,7 +375,7 @@
                 suggestionItem.className = 'surah-suggestion-item';
                 suggestionItem.textContent = surah.name;
                 suggestionItem.addEventListener('click', () => {
-                    selectSurah(surah.id, surah.name, surah.verses);
+                    selectSurah(surah.id, surah.name, surah.verses, surah.startPage, surah.endPage);
                 });
                 surahSuggestions.appendChild(suggestionItem);
             });
@@ -362,11 +460,34 @@
     });
     
     // Validate form before submission
-    form.addEventListener('submit', (event) => {
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault(); // Always prevent default first
+        
+        // Basic validation
         if (!surahSelect.value) {
-            event.preventDefault();
             alert('الرجاء اختيار سورة');
             surahSearchInput.focus();
+            return;
+        }
+        
+        if (!startVerseInput.value || !endVerseInput.value) {
+            alert('الرجاء إدخال نطاق الآيات');
+            startVerseInput.focus();
+            return;
+        }
+        
+        if (!startPageInput.value || !endPageInput.value) {
+            alert('الرجاء إدخال نطاق الصفحات');
+            startPageInput.focus();
+            return;
+        }
+        
+        // Check for overlapping ranges
+        const canSubmit = await checkOverlappingRanges();
+        
+        if (canSubmit) {
+            // If validation passes, submit the form
+            form.submit();
         }
     });
 </script>

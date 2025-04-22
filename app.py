@@ -55,12 +55,39 @@ def get_memorization_stats():
     total_verses = total_verses['total'] if total_verses['total'] else 0
     
     # Total pages memorized
-    total_pages = conn.execute('SELECT SUM(pages) as total FROM memorization').fetchone()
+    total_pages = conn.execute('SELECT SUM(end_page - start_page + 1) as total FROM memorization').fetchone()
     total_pages = total_pages['total'] if total_pages['total'] else 0
     
-    # Count of unique surahs with memorization
-    unique_surahs = conn.execute('SELECT COUNT(DISTINCT surah_id) as count FROM memorization').fetchone()
-    unique_surahs = unique_surahs['count'] if unique_surahs['count'] else 0
+    # تعديل: حساب عدد السور المكتملة (محفوظة بالكامل) فقط بدلاً من السور المحفوظة جزئياً
+    surahs_data = []
+    all_surahs = get_all_surahs()
+    
+    for surah in all_surahs:
+        # الحصول على جميع آيات السورة المحفوظة
+        memorized_verses = set()
+        memorizations = conn.execute('''
+            SELECT start_verse, end_verse 
+            FROM memorization 
+            WHERE surah_id = ?
+        ''', (surah['id'],)).fetchall()
+        
+        # حساب الآيات المحفوظة الفريدة
+        for memo in memorizations:
+            for v in range(memo['start_verse'], memo['end_verse'] + 1):
+                memorized_verses.add(v)
+        
+        # إضافة معلومات السورة للقائمة فقط إذا كانت مكتملة
+        surah_data = {
+            'id': surah['id'],
+            'name': surah['name'],
+            'total_verses': surah['verses'],
+            'memorized_verses': len(memorized_verses),
+            'percentage': (len(memorized_verses) / surah['verses']) * 100 if surah['verses'] > 0 else 0
+        }
+        surahs_data.append(surah_data)
+    
+    # حساب عدد السور المكتملة (100%)
+    completed_surahs = sum(1 for s in surahs_data if s['percentage'] == 100)
     
     # Calculate total Quran verses and pages for percentage calculation
     total_quran_verses = conn.execute('SELECT SUM(verses) as total FROM surahs').fetchone()
@@ -76,7 +103,8 @@ def get_memorization_stats():
     
     # Recent memorizations
     recent_memorizations = conn.execute('''
-        SELECT m.id, m.date, s.name as surah_name, m.start_verse, m.end_verse, m.pages, m.rating, m.reciter
+        SELECT m.id, m.date, s.name as surah_name, m.start_verse, m.end_verse, m.start_page, m.end_page, 
+               (m.end_page - m.start_page + 1) as pages, m.rating, m.reciter
         FROM memorization m
         JOIN surahs s ON m.surah_id = s.id
         ORDER BY m.date DESC
@@ -88,7 +116,7 @@ def get_memorization_stats():
     return {
         'total_verses': total_verses,
         'total_pages': total_pages,
-        'unique_surahs': unique_surahs,
+        'unique_surahs': completed_surahs,  # تم تغييرها لتعرض عدد السور المكتملة فقط
         'verse_percentage': round(verse_percentage, 2),
         'page_percentage': round(page_percentage, 2),
         'recent_memorizations': recent_memorizations
@@ -187,14 +215,15 @@ def add_memorization():
         surah_id = request.form.get('surah_id')
         start_verse = request.form.get('start_verse')
         end_verse = request.form.get('end_verse')
-        pages = request.form.get('pages')
+        start_page = request.form.get('start_page')
+        end_page = request.form.get('end_page')
         rating = request.form.get('rating')
         reciter = request.form.get('reciter')
         notes = request.form.get('notes')
-        favorite = 1 if request.form.get('favorite') else 0  # إضافة حقل المفضلة
+        favorite = 1 if request.form.get('favorite') else 0
         
         # Validate data
-        if not date or not surah_id or not start_verse or not end_verse or not rating:
+        if not date or not surah_id or not start_verse or not end_verse or not start_page or not end_page or not rating:
             flash('جميع الحقول المطلوبة يجب ملؤها', 'error')
             return redirect(url_for('add_memorization'))
         
@@ -202,9 +231,13 @@ def add_memorization():
             surah_id = int(surah_id)
             start_verse = int(start_verse)
             end_verse = int(end_verse)
-            pages = int(pages) if pages else None
+            start_page = int(start_page)
+            end_page = int(end_page)
             
-            # Validate verse range
+            # Calculate pages automatically
+            pages = end_page - start_page + 1
+            
+            # Validate verse and page ranges
             surah = get_surah_by_id(surah_id)
             if not surah:
                 flash('السورة غير موجودة', 'error')
@@ -217,13 +250,27 @@ def add_memorization():
             if end_verse < start_verse or end_verse > surah['verses']:
                 flash('رقم الآية الأخيرة غير صحيح', 'error')
                 return redirect(url_for('add_memorization'))
+                
+            if start_page < surah['start_page'] or start_page > surah['end_page']:
+                flash('رقم الصفحة الأولى غير صحيح', 'error')
+                return redirect(url_for('add_memorization'))
+                
+            if end_page < start_page or end_page > surah['end_page']:
+                flash('رقم الصفحة الأخيرة غير صحيح', 'error')
+                return redirect(url_for('add_memorization'))
+            
+            # Check for overlapping memorization ranges
+            overlap = check_verse_overlap(surah_id, start_verse, end_verse)
+            if overlap['overlap']:
+                flash('هناك تداخل مع سجل حفظ موجود، يرجى تعديل النطاق', 'error')
+                return redirect(url_for('add_memorization'))
             
             # Insert into database
             conn = get_db_connection()
             conn.execute('''
-                INSERT INTO memorization (date, surah_id, start_verse, end_verse, pages, rating, reciter, notes, favorite)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (date, surah_id, start_verse, end_verse, pages, rating, reciter, notes, favorite))
+                INSERT INTO memorization (date, surah_id, start_verse, end_verse, start_page, end_page, pages, rating, reciter, notes, favorite)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (date, surah_id, start_verse, end_verse, start_page, end_page, pages, rating, reciter, notes, favorite))
             conn.commit()
             conn.close()
             
@@ -233,8 +280,6 @@ def add_memorization():
         except ValueError:
             flash('قيم غير صالحة تم إدخالها', 'error')
             return redirect(url_for('add_memorization'))
-    
-    # GET request
     surahs = get_all_surahs()
     reciters = get_all_reciters()
     today = datetime.now().strftime('%Y-%m-%d')
@@ -253,7 +298,8 @@ def memorization_log():
     # بناء استعلام SQL الأساسي
     query = '''
         SELECT m.id, m.date, s.name as surah_name, s.id as surah_id, m.start_verse, m.end_verse, 
-               (m.end_verse - m.start_verse + 1) as verse_count, m.pages, m.rating, m.reciter, m.notes, m.favorite
+               (m.end_verse - m.start_verse + 1) as verse_count, m.start_page, m.end_page, 
+               (m.end_page - m.start_page + 1) as pages, m.rating, m.reciter, m.notes, m.favorite
         FROM memorization m
         JOIN surahs s ON m.surah_id = s.id
         WHERE 1=1
@@ -310,14 +356,15 @@ def edit_memorization(id):
         surah_id = request.form.get('surah_id')
         start_verse = request.form.get('start_verse')
         end_verse = request.form.get('end_verse')
-        pages = request.form.get('pages')
+        start_page = request.form.get('start_page')
+        end_page = request.form.get('end_page')
         rating = request.form.get('rating')
         reciter = request.form.get('reciter')
         notes = request.form.get('notes')
-        favorite = 1 if request.form.get('favorite') else 0  # تحديث حقل المفضلة
+        favorite = 1 if request.form.get('favorite') else 0
         
         # Validate data
-        if not date or not surah_id or not start_verse or not end_verse or not rating:
+        if not date or not surah_id or not start_verse or not end_verse or not start_page or not end_page or not rating:
             flash('جميع الحقول المطلوبة يجب ملؤها', 'error')
             return redirect(url_for('edit_memorization', id=id))
         
@@ -325,9 +372,13 @@ def edit_memorization(id):
             surah_id = int(surah_id)
             start_verse = int(start_verse)
             end_verse = int(end_verse)
-            pages = int(pages) if pages else None
+            start_page = int(start_page)
+            end_page = int(end_page)
             
-            # Validate verse range
+            # Calculate pages automatically
+            pages = end_page - start_page + 1
+            
+            # Validate verse and page ranges
             surah = get_surah_by_id(surah_id)
             if not surah:
                 flash('السورة غير موجودة', 'error')
@@ -340,13 +391,28 @@ def edit_memorization(id):
             if end_verse < start_verse or end_verse > surah['verses']:
                 flash('رقم الآية الأخيرة غير صحيح', 'error')
                 return redirect(url_for('edit_memorization', id=id))
+                
+            if start_page < surah['start_page'] or start_page > surah['end_page']:
+                flash('رقم الصفحة الأولى غير صحيح', 'error')
+                return redirect(url_for('edit_memorization', id=id))
+                
+            if end_page < start_page or end_page > surah['end_page']:
+                flash('رقم الصفحة الأخيرة غير صحيح', 'error')
+                return redirect(url_for('edit_memorization', id=id))
+            
+            # Check for overlapping memorization ranges (excluding current record)
+            overlap = check_verse_overlap(surah_id, start_verse, end_verse, id)
+            if overlap['overlap']:
+                flash('هناك تداخل مع سجل حفظ آخر، يرجى تعديل النطاق', 'error')
+                return redirect(url_for('edit_memorization', id=id))
             
             # Update database
             conn.execute('''
                 UPDATE memorization
-                SET date = ?, surah_id = ?, start_verse = ?, end_verse = ?, pages = ?, rating = ?, reciter = ?, notes = ?, favorite = ?
+                SET date = ?, surah_id = ?, start_verse = ?, end_verse = ?, start_page = ?, end_page = ?, 
+                    pages = ?, rating = ?, reciter = ?, notes = ?, favorite = ?
                 WHERE id = ?
-            ''', (date, surah_id, start_verse, end_verse, pages, rating, reciter, notes, favorite, id))
+            ''', (date, surah_id, start_verse, end_verse, start_page, end_page, pages, rating, reciter, notes, favorite, id))
             conn.commit()
             
             flash('تم تحديث الحفظ بنجاح', 'success')
@@ -356,7 +422,6 @@ def edit_memorization(id):
             flash('قيم غير صالحة تم إدخالها', 'error')
             return redirect(url_for('edit_memorization', id=id))
     
-    # GET request
     surahs = get_all_surahs()
     reciters = get_all_reciters()
     return render_template('edit_memorization.html', memorization=memorization, surahs=surahs, reciters=reciters)
@@ -499,79 +564,88 @@ def juz_progress():
     
     juz_progress = []
     for juz in all_juz:
-        # Get memorized verses in this juz range
+        # الخصائص الثابتة للجزء
         total_verses = 0
         memorized_verses = 0
         total_pages = juz['end_page'] - juz['start_page'] + 1
         memorized_pages = 0
         
-        # Calculate total verses in this juz range
+        # حساب عدد الآيات الكلي في الجزء
         if juz['start_surah'] == juz['end_surah']:
-            # Juz within a single surah
+            # الجزء ضمن سورة واحدة
             total_verses = juz['end_verse'] - juz['start_verse'] + 1
         else:
-            # First surah
+            # السورة الأولى
             first_surah = get_surah_by_id(juz['start_surah'])
             total_verses += first_surah['verses'] - juz['start_verse'] + 1
             
-            # Middle surahs
+            # السور الوسطى
             for s_id in range(juz['start_surah'] + 1, juz['end_surah']):
                 surah = get_surah_by_id(s_id)
                 total_verses += surah['verses']
             
-            # Last surah
+            # السورة الأخيرة
             total_verses += juz['end_verse']
         
-        # Get all memorizations that might overlap with this juz
+        # الحصول على سجلات الحفظ التي قد تتداخل مع هذا الجزء
+        # بناءً على نطاق الصفحات
         memorizations = conn.execute('''
-            SELECT m.surah_id, m.start_verse, m.end_verse, m.pages
+            SELECT m.start_page, m.end_page, m.surah_id, m.start_verse, m.end_verse
             FROM memorization m
-            WHERE m.surah_id >= ? AND m.surah_id <= ?
-        ''', (juz['start_surah'], juz['end_surah'])).fetchall()
+            WHERE NOT (m.end_page < ? OR m.start_page > ?)
+        ''', (juz['start_page'], juz['end_page'])).fetchall()
         
-        # Count memorized verses and pages
+        # حساب الصفحات المحفوظة
+        pages_set = set()  # مجموعة لتتبع الصفحات المحفوظة دون تكرار
+        
         for memo in memorizations:
+            # حساب نطاق الصفحات المشترك مع هذا الجزء
+            overlap_start_page = max(memo['start_page'], juz['start_page'])
+            overlap_end_page = min(memo['end_page'], juz['end_page'])
+            
+            # إضافة الصفحات إلى المجموعة (لتجنب العد المتكرر)
+            for page in range(overlap_start_page, overlap_end_page + 1):
+                pages_set.add(page)
+                
+            # حساب الآيات المحفوظة: فقط إذا كانت السورة ضمن نطاق الجزء
             surah_id = memo['surah_id']
-            start_verse = memo['start_verse']
-            end_verse = memo['end_verse']
             
-            # Check if memorization is within the juz
-            if surah_id == juz['start_surah'] and surah_id == juz['end_surah']:
-                # Both start and end surah are the same as the juz
-                overlap_start = max(start_verse, juz['start_verse'])
-                overlap_end = min(end_verse, juz['end_verse'])
-                if overlap_start <= overlap_end:
-                    memorized_verses += overlap_end - overlap_start + 1
-                    
-            elif surah_id == juz['start_surah']:
-                # Only start surah matches
-                overlap_start = max(start_verse, juz['start_verse'])
-                overlap_end = end_verse
-                if overlap_start <= overlap_end:
-                    memorized_verses += overlap_end - overlap_start + 1
-                    
-            elif surah_id == juz['end_surah']:
-                # Only end surah matches
-                overlap_start = start_verse
-                overlap_end = min(end_verse, juz['end_verse'])
-                if overlap_start <= overlap_end:
-                    memorized_verses += overlap_end - overlap_start + 1
-                    
-            elif juz['start_surah'] < surah_id < juz['end_surah']:
-                # Surah is completely within the juz
-                memorized_verses += end_verse - start_verse + 1
-            
-            # Count pages (simplified approach)
-            if memo['pages']:
-                surah = get_surah_by_id(surah_id)
-                if juz['start_page'] <= surah['end_page'] and juz['end_page'] >= surah['start_page']:
-                    # Add pages proportionally
-                    memorized_pages += memo['pages']
+            if juz['start_surah'] <= surah_id <= juz['end_surah']:
+                start_verse = memo['start_verse']
+                end_verse = memo['end_verse']
+                
+                # حساب التداخل بناءً على موقع السورة
+                if surah_id == juz['start_surah'] and surah_id == juz['end_surah']:
+                    # السورة هي نفسها سورة البداية والنهاية للجزء
+                    overlap_start = max(start_verse, juz['start_verse'])
+                    overlap_end = min(end_verse, juz['end_verse'])
+                    if overlap_start <= overlap_end:
+                        memorized_verses += overlap_end - overlap_start + 1
+                        
+                elif surah_id == juz['start_surah']:
+                    # السورة هي سورة البداية فقط
+                    overlap_start = max(start_verse, juz['start_verse'])
+                    if overlap_start <= end_verse:
+                        memorized_verses += end_verse - overlap_start + 1
+                        
+                elif surah_id == juz['end_surah']:
+                    # السورة هي سورة النهاية فقط
+                    overlap_end = min(end_verse, juz['end_verse'])
+                    if start_verse <= overlap_end:
+                        memorized_verses += overlap_end - start_verse + 1
+                        
+                elif juz['start_surah'] < surah_id < juz['end_surah']:
+                    # السورة بالكامل ضمن نطاق الجزء
+                    memorized_verses += end_verse - start_verse + 1
         
-        # Calculate percentages
+        # تعيين عدد الصفحات المحفوظة
+        memorized_pages = len(pages_set)
+        
+        # حساب النسب المئوية
         verse_percentage = (memorized_verses / total_verses) * 100 if total_verses > 0 else 0
         page_percentage = (memorized_pages / total_pages) * 100 if total_pages > 0 else 0
         
+        # إضافة معلومات الجزء للقائمة
         juz_progress.append({
             'id': juz['id'],
             'name': juz['name'],
@@ -831,6 +905,60 @@ def get_surah_verses(surah_id):
             'verses': surah['verses']
         })
     return jsonify({'error': 'Surah not found'}), 404
+
+def check_verse_overlap(surah_id, start_verse, end_verse, exclude_id=None):
+    """التحقق من تداخل نطاق آيات الحفظ مع سجلات موجودة"""
+    conn = get_db_connection()
+    
+    query = '''
+        SELECT id, start_verse, end_verse
+        FROM memorization 
+        WHERE surah_id = ?
+    '''
+    params = [surah_id]
+    
+    # استبعاد السجل الحالي في حالة التحرير
+    if exclude_id:
+        query += ' AND id != ?'
+        params.append(exclude_id)
+    
+    memorizations = conn.execute(query, params).fetchall()
+    conn.close()
+    
+    # التحقق من وجود تداخل
+    for memo in memorizations:
+        # حالات التداخل المختلفة
+        if (start_verse <= memo['start_verse'] and end_verse >= memo['start_verse']) or \
+           (start_verse >= memo['start_verse'] and start_verse <= memo['end_verse']) or \
+           (start_verse <= memo['start_verse'] and end_verse >= memo['end_verse']):
+            return {
+                'overlap': True,
+                'memorization_id': memo['id'],
+                'start_verse': memo['start_verse'],
+                'end_verse': memo['end_verse']
+            }
+    
+    return {'overlap': False}
+
+@app.route('/check-overlap')
+def check_overlap():
+    """API للتحقق من تداخل نطاق الحفظ"""
+    surah_id = request.args.get('surah_id', type=int)
+    start_verse = request.args.get('start_verse', type=int)
+    end_verse = request.args.get('end_verse', type=int)
+    exclude_id = request.args.get('exclude_id', type=int)  # معرف السجل للاستبعاد (عند التعديل)
+    
+    if not surah_id or not start_verse or not end_verse:
+        return jsonify({'error': 'Missing parameters'}), 400
+    
+    overlap = check_verse_overlap(surah_id, start_verse, end_verse, exclude_id)
+    
+    if overlap['overlap']:
+        # إضافة معلومات السورة للاستجابة
+        surah = get_surah_by_id(surah_id)
+        overlap['surah_name'] = surah['name'] if surah else 'غير معروف'
+        
+    return jsonify(overlap)
 
 if __name__ == '__main__':
     # Check if database exists, if not initialize it

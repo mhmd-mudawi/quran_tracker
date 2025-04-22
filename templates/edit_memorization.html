@@ -45,7 +45,7 @@
                 class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
                 <option value="">اختر السورة</option>
                 {% for surah in surahs %}
-                    <option value="{{ surah.id }}" {% if surah.id == memorization.surah_id %}selected{% endif %}>
+                    <option value="{{ surah.id }}" data-verses="{{ surah.verses }}" data-start-page="{{ surah.start_page }}" data-end-page="{{ surah.end_page }}" {% if surah.id == memorization.surah_id %}selected{% endif %}>
                         {{ surah.name }} ({{ surah.verses }} آية)
                     </option>
                 {% endfor %}
@@ -76,11 +76,28 @@
                 value="{{ memorization.end_verse - memorization.start_verse + 1 }}">
         </div>
         
-        <!-- Pages -->
+        <!-- Pages Range -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Start Page -->
+            <div>
+                <label for="start_page" class="block mb-2 text-sm font-medium text-slate-700">من الصفحة <span class="text-red-500">*</span></label>
+                <input type="number" id="start_page" name="start_page" min="1" max="604" value="{{ memorization.start_page or '' }}" required
+                    class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+            </div>
+            
+            <!-- End Page -->
+            <div>
+                <label for="end_page" class="block mb-2 text-sm font-medium text-slate-700">إلى الصفحة <span class="text-red-500">*</span></label>
+                <input type="number" id="end_page" name="end_page" min="1" max="604" value="{{ memorization.end_page or '' }}" required
+                    class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+            </div>
+        </div>
+        
+        <!-- Page Count (Calculated) -->
         <div class="mb-4">
             <label for="pages" class="block mb-2 text-sm font-medium text-slate-700">عدد الصفحات</label>
-            <input type="number" id="pages" name="pages" min="0" value="{{ memorization.pages or '' }}"
-                class="block w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+            <input type="number" id="pages" name="pages" min="0" value="{{ memorization.pages or '' }}" readonly
+                class="block w-full p-2.5 border border-slate-200 bg-slate-50 rounded-lg">
         </div>
         
         <!-- Reciter Selection -->
@@ -154,6 +171,20 @@
         </div>
     </form>
 </div>
+
+<!-- Modal for Overlapping Range Warning (in edit mode) -->
+<div id="warningModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-xl font-bold text-red-600 mb-4">تداخل في نطاق الحفظ</h3>
+        <p class="mb-4 text-slate-700" id="warningMessage"></p>
+        <p class="mb-6 text-slate-600">يرجى تعديل النطاق المحدد لتجنب الحسابات الخاطئة.</p>
+        <div class="flex justify-end gap-3">
+            <button id="closeWarning" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 transition-all duration-300">
+                فهمت
+            </button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -163,6 +194,21 @@
     const startVerseInput = document.getElementById('start_verse');
     const endVerseInput = document.getElementById('end_verse');
     const verseCountInput = document.getElementById('verse_count');
+    const startPageInput = document.getElementById('start_page');
+    const endPageInput = document.getElementById('end_page');
+    const pagesInput = document.getElementById('pages');
+    const form = document.querySelector('form');
+    const warningModal = document.getElementById('warningModal');
+    const warningMessage = document.getElementById('warningMessage');
+    const closeWarningBtn = document.getElementById('closeWarning');
+    
+    // Current memorization ID (to exclude from overlap check)
+    const currentMemorizationId = {{ memorization.id }};
+    
+    // Warning modal controls
+    closeWarningBtn.addEventListener('click', function() {
+        warningModal.classList.add('hidden');
+    });
     
     // Function to update verse count
     function updateVerseCount() {
@@ -176,9 +222,49 @@
         }
     }
     
-    // Event listeners
+    // Function to update page count
+    function updatePageCount() {
+        const startPage = parseInt(startPageInput.value) || 0;
+        const endPage = parseInt(endPageInput.value) || 0;
+        
+        if (startPage > 0 && endPage > 0 && endPage >= startPage) {
+            pagesInput.value = endPage - startPage + 1;
+        } else {
+            pagesInput.value = 0;
+        }
+    }
+    
+    // Event listeners for verse and page inputs
     startVerseInput.addEventListener('input', updateVerseCount);
     endVerseInput.addEventListener('input', updateVerseCount);
+    startPageInput.addEventListener('input', updatePageCount);
+    endPageInput.addEventListener('input', updatePageCount);
+    
+    // Function to check for overlapping ranges
+    async function checkOverlappingRanges() {
+        const surahId = surahSelect.value;
+        const startVerse = parseInt(startVerseInput.value);
+        const endVerse = parseInt(endVerseInput.value);
+        
+        if (!surahId || !startVerse || !endVerse) return true; // Skip validation if incomplete
+        
+        try {
+            const response = await fetch(`/check-overlap?surah_id=${surahId}&start_verse=${startVerse}&end_verse=${endVerse}&exclude_id=${currentMemorizationId}`);
+            const data = await response.json();
+            
+            if (data.overlap) {
+                // Show warning modal
+                warningMessage.textContent = `هناك تداخل مع سجل حفظ آخر: سورة ${data.surah_name} من الآية ${data.start_verse} إلى ${data.end_verse}.`;
+                warningModal.classList.remove('hidden');
+                return false; // Prevent form submission
+            }
+            
+            return true; // No overlap, allow form submission
+        } catch (error) {
+            console.error('Error checking overlap:', error);
+            return true; // In case of error, allow form submission
+        }
+    }
     
     // Function to fetch surah data and update max verse values
     surahSelect.addEventListener('change', async function() {
@@ -187,28 +273,72 @@
         if (!surahId) {
             startVerseInput.value = '';
             endVerseInput.value = '';
+            startPageInput.value = '';
+            endPageInput.value = '';
             verseCountInput.value = '0';
+            pagesInput.value = '0';
             return;
         }
         
         try {
-            const response = await fetch(`/get-surah-verses/${surahId}`);
-            const data = await response.json();
+            const selectedOption = this.options[this.selectedIndex];
+            const maxVerses = selectedOption.getAttribute('data-verses');
+            const startPage = selectedOption.getAttribute('data-start-page');
+            const endPage = selectedOption.getAttribute('data-end-page');
             
-            if (data.verses) {
-                // Set max values
-                startVerseInput.max = data.verses;
-                endVerseInput.max = data.verses;
-                
-                updateVerseCount();
-            }
+            // Set verse constraints
+            startVerseInput.max = maxVerses;
+            endVerseInput.max = maxVerses;
+            
+            // Set page constraints
+            startPageInput.min = startPage;
+            startPageInput.max = endPage;
+            endPageInput.min = startPage;
+            endPageInput.max = endPage;
+            
+            // Update counts
+            updateVerseCount();
+            updatePageCount();
         } catch (error) {
-            console.error('Error fetching surah data:', error);
+            console.error('Error updating form:', error);
         }
     });
     
-    // Update verse count on page load
+    // Validate form before submission
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault(); // Always prevent default first
+        
+        // Basic validation
+        if (!surahSelect.value) {
+            alert('الرجاء اختيار سورة');
+            surahSelect.focus();
+            return;
+        }
+        
+        if (!startVerseInput.value || !endVerseInput.value) {
+            alert('الرجاء إدخال نطاق الآيات');
+            startVerseInput.focus();
+            return;
+        }
+        
+        if (!startPageInput.value || !endPageInput.value) {
+            alert('الرجاء إدخال نطاق الصفحات');
+            startPageInput.focus();
+            return;
+        }
+        
+        // Check for overlapping ranges
+        const canSubmit = await checkOverlappingRanges();
+        
+        if (canSubmit) {
+            // If validation passes, submit the form
+            form.submit();
+        }
+    });
+    
+    // Update verse count and page count on page load
     updateVerseCount();
+    updatePageCount();
     
     // Trigger change event to set max values based on current surah
     surahSelect.dispatchEvent(new Event('change'));

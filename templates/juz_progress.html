@@ -58,8 +58,13 @@
 <!-- Summary Chart -->
 <div class="mt-8 bg-white rounded-lg shadow p-6">
     <h3 class="text-xl font-bold text-primary mb-4">ملخص تقدم الحفظ حسب الأجزاء</h3>
-    <div style="height: 400px;">
-        <canvas id="juzSummaryChart"></canvas>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div style="height: 300px;">
+            <canvas id="juzVersesChart"></canvas>
+        </div>
+        <div style="height: 300px;">
+            <canvas id="juzPagesChart"></canvas>
+        </div>
     </div>
 </div>
 
@@ -85,11 +90,13 @@
     
     <div class="bg-white rounded-lg shadow p-6 md:col-span-2">
         <h3 class="text-lg font-bold text-primary mb-4">نسبة الإنجاز الكلية</h3>
-        <div class="relative pt-1">
+        
+        <!-- Verses Progress -->
+        <div class="relative pt-1 mb-6">
             <div class="flex mb-2 items-center justify-between">
                 <div>
                     <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-primary bg-teal-100">
-                        التقدم
+                        تقدم الآيات
                     </span>
                 </div>
                 <div class="text-right">
@@ -108,6 +115,31 @@
                 <span class="font-bold">{{ juz_data|sum(attribute='total_verses') }}</span> آية
             </div>
         </div>
+        
+        <!-- Pages Progress -->
+        <div class="relative pt-1">
+            <div class="flex mb-2 items-center justify-between">
+                <div>
+                    <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-secondary bg-blue-100">
+                        تقدم الصفحات
+                    </span>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs font-semibold inline-block text-secondary">
+                        {{ (juz_data|sum(attribute='memorized_pages') / juz_data|sum(attribute='total_pages') * 100)|round(2) }}%
+                    </span>
+                </div>
+            </div>
+            <div class="overflow-hidden h-6 mb-4 text-xs flex rounded-lg bg-blue-100">
+                <div style="width:{{ (juz_data|sum(attribute='memorized_pages') / juz_data|sum(attribute='total_pages') * 100)|round(2) }}%" 
+                     class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-secondary transition-all duration-500">
+                </div>
+            </div>
+            <div class="text-center text-slate-600">
+                <span class="font-bold">{{ juz_data|sum(attribute='memorized_pages') }}</span> صفحة محفوظة من أصل 
+                <span class="font-bold">{{ juz_data|sum(attribute='total_pages') }}</span> صفحة
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -115,60 +147,180 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Prepare data for chart
+        // Prepare data for charts
         const juzLabels = [
             {% for juz in juz_data %}
                 "الجزء {{ juz.id }}",
             {% endfor %}
         ];
         
-        const juzPercentages = [
+        const versePercentages = [
             {% for juz in juz_data %}
                 {{ juz.verse_percentage }},
             {% endfor %}
         ];
         
-        // Create chart
-        const ctx = document.getElementById('juzSummaryChart').getContext('2d');
-        const chart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: juzLabels,
-                datasets: [{
-                    label: 'نسبة الحفظ %',
-                    data: juzPercentages,
-                    backgroundColor: '#0f766e',
-                    borderColor: '#0f766e',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    barThickness: 16
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        title: {
-                            display: true,
-                            text: 'نسبة الحفظ %'
+        const pagePercentages = [
+            {% for juz in juz_data %}
+                {{ juz.page_percentage }},
+            {% endfor %}
+        ];
+        
+        // Create verse progress chart
+        try {
+            const versesCtx = document.getElementById('juzVersesChart').getContext('2d');
+            if (versesCtx) {
+                new Chart(versesCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: juzLabels,
+                        datasets: [{
+                            label: 'نسبة حفظ الآيات %',
+                            data: versePercentages,
+                            backgroundColor: '#0f766e',
+                            borderColor: '#0f766e',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            barThickness: 12,
+                            maxBarThickness: 16
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        family: 'Cairo, sans-serif'
+                                    }
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'تقدم حفظ الآيات حسب الأجزاء',
+                                font: {
+                                    family: 'Cairo, sans-serif',
+                                    size: 16
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.parsed.y + '%';
+                                    }
+                                }
+                            }
                         },
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%';
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    },
+                                    font: {
+                                        family: 'Cairo, sans-serif'
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: {
+                                        family: 'Cairo, sans-serif'
+                                    }
+                                }
                             }
                         }
                     }
-                }
+                });
+            } else {
+                console.error('Could not find versesChart canvas element');
             }
-        });
+        } catch (error) {
+            console.error('Error creating verses chart:', error);
+        }
+        
+        // Create page progress chart
+        try {
+            const pagesCtx = document.getElementById('juzPagesChart').getContext('2d');
+            if (pagesCtx) {
+                new Chart(pagesCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: juzLabels,
+                        datasets: [{
+                            label: 'نسبة حفظ الصفحات %',
+                            data: pagePercentages,
+                            backgroundColor: '#0369a1',
+                            borderColor: '#0369a1',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            barThickness: 12,
+                            maxBarThickness: 16
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        family: 'Cairo, sans-serif'
+                                    }
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'تقدم حفظ الصفحات حسب الأجزاء',
+                                font: {
+                                    family: 'Cairo, sans-serif',
+                                    size: 16
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.parsed.y + '%';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    },
+                                    font: {
+                                        family: 'Cairo, sans-serif'
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: {
+                                        family: 'Cairo, sans-serif'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                console.error('Could not find pagesChart canvas element');
+            }
+        } catch (error) {
+            console.error('Error creating pages chart:', error);
+        }
     });
 </script>
 {% endblock %}

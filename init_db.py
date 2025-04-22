@@ -220,7 +220,9 @@ CREATE TABLE memorization (
     reciter TEXT,
     notes TEXT,
     FOREIGN KEY (surah_id,
-    favorite BOOLEAN DEFAULT 0
+    favorite BOOLEAN DEFAULT 0,
+    start_page INTEGER,
+    end_page INTEGER
 ) REFERENCES surahs(id)
 )
 ''')

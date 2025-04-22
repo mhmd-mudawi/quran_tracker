@@ -50,15 +50,27 @@ def get_all_juz():
 def get_memorization_stats():
     conn = get_db_connection()
     
+    # مجموعة لتخزين الصفحات الفريدة
+    unique_pages = set()
+    
     # Total verses memorized
     total_verses = conn.execute('SELECT SUM(end_verse - start_verse + 1) as total FROM memorization').fetchone()
     total_verses = total_verses['total'] if total_verses['total'] else 0
     
-    # Total pages memorized
-    total_pages = conn.execute('SELECT SUM(end_page - start_page + 1) as total FROM memorization').fetchone()
-    total_pages = total_pages['total'] if total_pages['total'] else 0
+    # الحصول على جميع سجلات الحفظ للتحقق من الصفحات الفريدة
+    memorizations = conn.execute('''
+        SELECT start_page, end_page FROM memorization
+    ''').fetchall()
     
-    # تعديل: حساب عدد السور المكتملة (محفوظة بالكامل) فقط بدلاً من السور المحفوظة جزئياً
+    # إضافة كل صفحة محفوظة إلى المجموعة (لتجنب التكرار)
+    for memo in memorizations:
+        for page in range(memo['start_page'], memo['end_page'] + 1):
+            unique_pages.add(page)
+    
+    # Total pages memorized (counted uniquely)
+    total_pages = len(unique_pages)
+    
+    # حساب عدد السور المكتملة (محفوظة بالكامل) فقط
     surahs_data = []
     all_surahs = get_all_surahs()
     
@@ -116,7 +128,7 @@ def get_memorization_stats():
     return {
         'total_verses': total_verses,
         'total_pages': total_pages,
-        'unique_surahs': completed_surahs,  # تم تغييرها لتعرض عدد السور المكتملة فقط
+        'unique_surahs': completed_surahs,
         'verse_percentage': round(verse_percentage, 2),
         'page_percentage': round(page_percentage, 2),
         'recent_memorizations': recent_memorizations
@@ -501,7 +513,7 @@ def surah_progress():
     for surah in surahs:
         # Get all memorizations for this surah
         memorizations = conn.execute('''
-            SELECT start_verse, end_verse 
+            SELECT start_verse, end_verse, start_page, end_page
             FROM memorization 
             WHERE surah_id = ?
             ORDER BY start_verse
@@ -509,15 +521,21 @@ def surah_progress():
         
         # Count unique memorized verses
         memorized_verses = set()
+        memorized_pages_set = set()  # استخدام مجموعة للصفحات الفريدة
+        
         for memo in memorizations:
+            # إضافة الآيات
             for v in range(memo['start_verse'], memo['end_verse'] + 1):
                 memorized_verses.add(v)
+            
+            # إضافة الصفحات
+            for p in range(memo['start_page'], memo['end_page'] + 1):
+                # التحقق من أن الصفحة ضمن نطاق السورة
+                if surah['start_page'] <= p <= surah['end_page']:
+                    memorized_pages_set.add(p)
         
-        # Calculate pages
-        memorized_pages = 0
-        for memo in conn.execute('SELECT pages FROM memorization WHERE surah_id = ?', (surah['id'],)).fetchall():
-            if memo['pages']:
-                memorized_pages += memo['pages']
+        # تحديد عدد الصفحات المحفوظة (الفريدة فقط)
+        memorized_pages = len(memorized_pages_set)
         
         # Calculate percentage
         percentage = (len(memorized_verses) / surah['verses']) * 100 if surah['verses'] > 0 else 0
@@ -590,7 +608,9 @@ def juz_progress():
         total_verses = 0
         memorized_verses = 0
         total_pages = juz['end_page'] - juz['start_page'] + 1
-        memorized_pages = 0
+        
+        # مجموعة لتخزين الصفحات المحفوظة الفريدة
+        pages_set = set()
         
         # حساب عدد الآيات الكلي في الجزء
         if juz['start_surah'] == juz['end_surah']:
@@ -618,8 +638,6 @@ def juz_progress():
         ''', (juz['start_page'], juz['end_page'])).fetchall()
         
         # حساب الصفحات المحفوظة
-        pages_set = set()  # مجموعة لتتبع الصفحات المحفوظة دون تكرار
-        
         for memo in memorizations:
             # حساب نطاق الصفحات المشترك مع هذا الجزء
             overlap_start_page = max(memo['start_page'], juz['start_page'])
@@ -660,7 +678,7 @@ def juz_progress():
                     # السورة بالكامل ضمن نطاق الجزء
                     memorized_verses += end_verse - start_verse + 1
         
-        # تعيين عدد الصفحات المحفوظة
+        # تعيين عدد الصفحات المحفوظة (الفريدة فقط)
         memorized_pages = len(pages_set)
         
         # حساب النسب المئوية
